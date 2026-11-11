@@ -24,6 +24,10 @@ FORCE_RECIPIENT_EMAIL = os.getenv("FORCE_RECIPIENT_EMAIL", "").strip()
 
 DATABASE_PATH = os.getenv("DATABASE_PATH", "quoteloop.db")
 
+# Groq (reads the customer's message). Free key from console.groq.com
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
 # Polling fallback: how often / how long we check PayPal after sending an invoice.
 POLL_INTERVAL_SECONDS = int(os.getenv("POLL_INTERVAL_SECONDS", "5"))
 POLL_MAX_TRIES = int(os.getenv("POLL_MAX_TRIES", "180"))

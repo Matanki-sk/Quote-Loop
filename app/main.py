@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, db, paypal
+from . import config, db, llm, paypal
 from .pricing import build_quote
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -46,6 +46,10 @@ class QuoteRequest(BaseModel):
     requested_discount: float | None = Field(default=None, ge=0, le=1)
     deadline_days: int | None = Field(default=None, ge=0)
     override_discount: float | None = Field(default=None, ge=0, le=1)
+
+
+class ExtractRequest(BaseModel):
+    text: str = Field(min_length=3, max_length=5000)
 
 
 class ApproveRequest(BaseModel):
@@ -95,6 +99,40 @@ def quote(req: QuoteRequest):
         deadline_days=req.deadline_days,
         override_discount=req.override_discount,
     )
+
+
+@app.post("/api/extract")
+async def extract(req: ExtractRequest):
+    """Pasted customer message -> extracted fields -> priced quote with flags and a step trace."""
+    try:
+        extracted = await llm.extract_request(req.text)
+    except llm.ExtractionError as e:
+        raise HTTPException(e.status, str(e))
+
+    q = build_quote(
+        [{"catalog_id": i["catalog_id"], "quantity": i["quantity"]} for i in extracted["items"]],
+        requested_discount=extracted["requested_discount"],
+        deadline_days=extracted["deadline_days"],
+    )
+
+    trace = [f"Read the message: found {len(extracted['items'])} item(s)"]
+    if extracted["summary"]:
+        trace.append(f"Summary: {extracted['summary']}")
+    if extracted["deadline_days"] is not None:
+        trace.append(f"Deadline: {extracted['deadline_days']} day(s) from today")
+    q["trace"] = trace + q["trace"]
+
+    if not extracted["items"]:
+        q["flags"].append({"code": "no_items_found", "severity": "error",
+                           "message": "No catalog items could be found in this message."})
+    for it in extracted["items"]:
+        if it["confidence"] == "low":
+            q["flags"].append({
+                "code": "low_confidence", "severity": "warning",
+                "message": f"Not sure about '{it['requested_name'] or it['catalog_id']}' "
+                           f"(quantity {it['quantity']}). Please check it.",
+            })
+    return {"extracted": extracted, "quote": q}
 
 
 @app.post("/api/invoices/approve")

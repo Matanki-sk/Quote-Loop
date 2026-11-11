@@ -37,6 +37,7 @@ def test_full_flow(monkeypatch):
     monkeypatch.setattr(paypal, "send_invoice", fake_send)
     monkeypatch.setattr(paypal, "get_invoice", fake_get)
     monkeypatch.setattr(main, "poll_invoice", no_poll)
+    monkeypatch.setattr(main.config, "SKIP_WEBHOOK_VERIFY", True)
 
     with TestClient(main.app) as client:
         q = client.post("/api/quote", json={
