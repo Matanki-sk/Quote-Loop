@@ -4,35 +4,858 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>QuoteLoop</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-50 text-slate-800">
-  <main class="max-w-4xl mx-auto p-6">
-    <h1 class="text-2xl font-semibold">QuoteLoop</h1>
-    <p class="text-slate-500 mb-6">Placeholder page. This is where the three-panel UI goes on Thursday.</p>
-
-    <h2 class="font-medium mb-2">Invoices</h2>
-    <table class="w-full text-sm bg-white rounded shadow">
-      <thead class="text-left text-slate-500">
-        <tr><th class="p-2">Number</th><th class="p-2">Customer</th><th class="p-2">Total</th><th class="p-2">Status</th></tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-  </main>
-  <script>
-    async function refresh() {
-      try {
-        const res = await fetch('/api/invoices');
-        const data = await res.json();
-        document.getElementById('rows').innerHTML = data.map(i =>
-          `<tr class="border-t"><td class="p-2">${i.invoice_number}</td>
-           <td class="p-2">${i.customer_name}</td>
-           <td class="p-2">${i.currency} ${i.total.toFixed(2)}</td>
-           <td class="p-2 font-medium">${i.status}</td></tr>`).join('');
-      } catch (e) { /* server restarting */ }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@33.3.2/dist/ag-grid-community.min.js"></script>
+  <style>
+    :root {
+      --desk: #dde4ea;
+      --paper: #ffffff;
+      --paper-2: #f5f7f9;
+      --ink: #0e1726;
+      --ink-2: #3a4757;
+      --ink-3: #5d6a7c;
+      --rule: #d5dce3;
+      --rule-strong: #b4c0cc;
+      --blue: #1e3a8a;
+      --blue-press: #17306f;
+      --blue-soft: #e6ecfb;
+      --green: #0f6b4f;
+      --green-soft: #e1f3ec;
+      --amber: #7a4f00;
+      --amber-soft: #fdf1d6;
+      --red: #a42a22;
+      --red-soft: #fbe5e2;
+      --info: #1d4f91;
+      --info-soft: #e3eefb;
+      --serif: "Newsreader", Georgia, "Times New Roman", serif;
+      --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
-    refresh();
-    setInterval(refresh, 3000);
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--desk); color: var(--ink);
+      font: 400 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased;
+      font-variant-numeric: tabular-nums;
+    }
+    h1, h2, h3, p { margin: 0; }
+    button, input, textarea { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+
+    /* ---------- header ---------- */
+    .top {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      max-width: 1320px; margin: 0 auto; padding: 22px 32px 6px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand svg { display: block; }
+    .brand span { font: 600 27px/1 var(--serif); letter-spacing: -0.01em; }
+    .whose { text-align: right; line-height: 1.3; }
+    .whose strong { display: block; font-weight: 600; }
+    .whose small { color: var(--ink-3); font-size: 13px; }
+
+    /* ---------- layout ---------- */
+    .wrap { max-width: 1320px; margin: 0 auto; padding: 18px 32px 56px; }
+    .cols {
+      display: grid; gap: 32px; align-items: start;
+      grid-template-columns: minmax(270px, 0.85fr) minmax(0, 1.55fr) minmax(270px, 0.85fr);
+    }
+    @media (max-width: 1100px) {
+      .cols { grid-template-columns: minmax(0, 1fr); }
+      .top, .wrap { padding-left: 18px; padding-right: 18px; }
+    }
+    .col-h { margin-bottom: 14px; }
+    .col-h h2 { font: 600 24px/1.2 var(--serif); letter-spacing: -0.005em; }
+    .col-h p { color: var(--ink-3); font-size: 14px; margin-top: 2px; }
+
+    /* ---------- request column ---------- */
+    .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .samples span { color: var(--ink-3); font-size: 13px; margin-right: 2px; }
+    .sample {
+      border: 1px solid var(--rule-strong); background: transparent; border-radius: 999px;
+      padding: 4px 12px; font-size: 13px; cursor: pointer; color: var(--ink-2);
+    }
+    .sample:hover { background: var(--paper); border-color: var(--ink-3); }
+    textarea.msg {
+      width: 100%; min-height: 250px; resize: vertical; padding: 14px 16px;
+      background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 6px;
+      line-height: 1.6; font-size: 15px;
+    }
+    textarea.msg::placeholder { color: #8794a5; }
+    .actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+    .actions small { color: var(--ink-3); font-size: 13px; }
+    .btn {
+      appearance: none; border: 1px solid transparent; border-radius: 6px; cursor: pointer;
+      padding: 9px 18px; font-weight: 600; background: var(--blue); color: #fff;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      text-decoration: none; transition: background .12s, transform .06s;
+    }
+    .btn:hover { background: var(--blue-press); }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { background: #9aa7c4; cursor: not-allowed; transform: none; }
+    .btn.quiet { background: transparent; color: var(--blue); border-color: var(--rule-strong); }
+    .btn.quiet:hover { background: var(--blue-soft); border-color: var(--blue); }
+    .btn.wide { width: 100%; padding: 13px 18px; font-size: 16px; }
+    .spin {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .err {
+      margin-top: 12px; padding: 10px 14px; border-radius: 6px;
+      background: var(--red-soft); color: var(--red); border-left: 3px solid var(--red);
+      font-size: 14px; word-break: break-word;
+    }
+    .found { margin-top: 26px; }
+    .found h3 { font: 600 17px/1.3 var(--serif); margin-bottom: 4px; }
+    .found .summary { font: italic 500 16px/1.45 var(--serif); color: var(--ink-2); margin-bottom: 10px; }
+    .found dl { margin: 0; border-top: 1px solid var(--rule-strong); }
+    .found dl div {
+      display: flex; justify-content: space-between; gap: 16px;
+      padding: 8px 0; border-bottom: 1px solid var(--rule);
+    }
+    .found dt { color: var(--ink-3); }
+    .found dd { margin: 0; font-weight: 500; text-align: right; word-break: break-word; }
+    .found dd.none { color: var(--ink-3); font-weight: 400; }
+
+    /* ---------- quote sheet ---------- */
+    .sheet {
+      background: var(--paper); border: 1px solid var(--rule); border-radius: 6px;
+      box-shadow: 0 1px 0 rgba(14,23,38,.04), 0 18px 40px -26px rgba(14,23,38,.45);
+    }
+    .sheet.empty-sheet {
+      background: transparent; border: 1.5px dashed var(--rule-strong); box-shadow: none;
+      padding: 56px 28px; text-align: center; color: var(--ink-3);
+    }
+    .empty-sheet strong { display: block; color: var(--ink); font: 600 19px/1.3 var(--serif); margin-bottom: 4px; }
+    .sheet-head {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+      padding: 20px 26px 14px; border-bottom: 2px solid var(--ink);
+    }
+    .sheet-head h3 { font: 600 22px/1.2 var(--serif); }
+    .sheet-head small { color: var(--ink-3); }
+    .sec { padding: 16px 26px; border-bottom: 1px solid var(--rule); }
+    .sec:last-child { border-bottom: 0; }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px) { .fields { grid-template-columns: 1fr; } }
+    label.f { display: block; font-size: 13px; color: var(--ink-3); }
+    label.f input, label.f textarea, .suffix input {
+      display: block; width: 100%; margin-top: 3px; padding: 8px 10px; color: var(--ink);
+      background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 5px;
+    }
+    input:disabled, textarea:disabled { background: var(--paper-2); color: var(--ink-2); }
+
+    .lines-h, .line {
+      display: grid; grid-template-columns: minmax(0, 1fr) 70px 176px 26px; gap: 12px; align-items: center;
+    }
+    .lines-h { color: var(--ink-3); font-size: 13px; padding-bottom: 6px; border-bottom: 1px solid var(--rule-strong); }
+    .lines-h span:nth-child(3), .line .amt { text-align: right; }
+    .line { padding: 11px 0; border-bottom: 1px solid var(--rule); }
+    .line:last-child { border-bottom: 0; }
+    .line-name { font-weight: 600; }
+    .line-sub { color: var(--ink-3); font-size: 13px; }
+    .line-sub.low { color: var(--amber); }
+    .line input.qty {
+      width: 70px; padding: 6px 8px; text-align: center;
+      border: 1px solid var(--rule-strong); border-radius: 5px; background: var(--paper);
+    }
+    .amt s { color: var(--ink-3); margin-right: 8px; font-size: 13px; }
+    .amt { font-weight: 500; white-space: nowrap; }
+    .x {
+      width: 26px; height: 26px; border-radius: 50%; border: 0; background: transparent; cursor: pointer;
+      color: var(--ink-3); font-size: 18px; line-height: 1;
+    }
+    .x:hover { background: var(--red-soft); color: var(--red); }
+    .line.missing .line-name { color: var(--red); }
+    .line.missing .miss { grid-column: 2 / 4; color: var(--red); font-size: 13px; }
+    .line.extra .line-name { font-weight: 500; }
+    @media (max-width: 560px) {
+      .lines-h { display: none; }
+      .line { grid-template-columns: 70px minmax(0, 1fr) 26px; row-gap: 6px; }
+      .line > :first-child { grid-column: 1 / -1; }
+      .line.missing .miss { grid-column: 1 / 3; }
+    }
+
+    .totals { margin-left: auto; width: min(340px, 100%); padding-top: 10px; }
+    .totals div { display: flex; justify-content: space-between; padding: 3px 0; color: var(--ink-2); }
+    .totals .disc { color: var(--green); }
+    .totals .grand {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-top: 8px; padding: 10px 0 0; border-top: 2px solid var(--ink); color: var(--ink);
+    }
+    .grand span { font-weight: 600; }
+    .grand strong { font: 600 36px/1 var(--serif); letter-spacing: -0.01em; }
+
+    .notes-h { font-weight: 600; margin-bottom: 8px; }
+    .note {
+      margin: 6px 0; padding: 8px 12px; border-left: 3px solid; border-radius: 4px; font-size: 14px;
+    }
+    .note.error { background: var(--red-soft); border-color: var(--red); color: #6e1a15; }
+    .note.warning { background: var(--amber-soft); border-color: #c98a00; color: var(--amber); }
+    .note.info { background: var(--info-soft); border-color: var(--info); color: #14396b; }
+
+    .decide { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+    .decide label.f { flex: 0 0 150px; }
+    .suffix { position: relative; }
+    .suffix input { padding-right: 28px; }
+    .suffix i { position: absolute; right: 10px; bottom: 8px; font-style: normal; color: var(--ink-3); }
+    .decide .btn { padding: 8px 14px; font-weight: 500; }
+    .decide .hint { flex-basis: 100%; color: var(--ink-3); font-size: 13px; }
+
+    details.how summary { cursor: pointer; font-weight: 600; }
+    details.how ol { margin: 10px 0 0; padding-left: 22px; color: var(--ink-2); font-size: 14px; }
+    details.how li { padding: 1px 0; }
+    details.how li.sub { list-style: none; margin-left: 4px; color: var(--ink-3); }
+    .approve-hint { margin-top: 8px; color: var(--ink-3); font-size: 13px; text-align: center; }
+    .sent-banner {
+      padding: 14px 26px; background: var(--green-soft); color: var(--green);
+      border-bottom: 1px solid #b9dccd; font-weight: 600; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    .sent-banner .btn { padding: 6px 12px; font-weight: 500; }
+
+    /* ---------- payment column ---------- */
+    .pay-top { position: relative; padding: 4px 0 18px; }
+    .pay-top .num { font: 600 20px/1.2 var(--serif); }
+    .pay-top .who { color: var(--ink-2); }
+    .pay-top .sum { font: 600 30px/1.1 var(--serif); margin-top: 8px; }
+    .badge {
+      display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;
+      background: var(--blue-soft); color: var(--blue);
+    }
+    .badge.paid { background: var(--green-soft); color: var(--green); }
+    .badge.draft { background: #e8ecf0; color: var(--ink-2); }
+    .badge.cancelled { background: var(--red-soft); color: var(--red); }
+    .badge.refunded, .badge.partial { background: var(--amber-soft); color: var(--amber); }
+    .stamp {
+      position: absolute; right: 0; top: 0; transform: rotate(-9deg);
+      border: 3px double var(--green); color: var(--green); border-radius: 6px;
+      padding: 2px 14px 4px; text-align: center; line-height: 1.1; background: rgba(255,255,255,.55);
+      mix-blend-mode: multiply;
+    }
+    .stamp b { display: block; font: 600 30px/1 var(--serif); letter-spacing: 0.08em; }
+    .stamp small { font-size: 12px; font-weight: 600; }
+    .stamp.land { animation: land .34s cubic-bezier(.2,.9,.3,1.2) both; }
+    @keyframes land {
+      0% { transform: rotate(-2deg) scale(1.9); opacity: 0; }
+      60% { opacity: 1; }
+      100% { transform: rotate(-9deg) scale(1); opacity: 1; }
+    }
+    .tl { list-style: none; margin: 0; padding: 0; }
+    .tl li { position: relative; padding: 0 0 22px 38px; }
+    .tl li::before {
+      content: ""; position: absolute; left: 11px; top: 26px; bottom: 2px; width: 2px; background: var(--rule-strong);
+    }
+    .tl li:last-child { padding-bottom: 0; }
+    .tl li:last-child::before { display: none; }
+    .tl li.done::before { background: var(--green); }
+    .dot {
+      position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%;
+      border: 2px solid var(--rule-strong); background: var(--desk); display: grid; place-items: center;
+      font-size: 13px; font-weight: 700; color: #fff;
+    }
+    .tl li.done .dot { background: var(--green); border-color: var(--green); }
+    .tl li.bad .dot { background: var(--red); border-color: var(--red); }
+    .tl li.now .dot { border-color: var(--blue); background: var(--paper); }
+    .tl li.now .dot::after {
+      content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--blue);
+      animation: beat 1.4s ease-in-out infinite;
+    }
+    @keyframes beat { 50% { transform: scale(.55); opacity: .5; } }
+    .tl .t { font-weight: 600; }
+    .tl .d { color: var(--ink-3); font-size: 14px; }
+    .tl li.todo .t { color: var(--ink-3); font-weight: 500; }
+    .live { margin-top: 18px; color: var(--ink-3); font-size: 13px; }
+    .pay-empty { color: var(--ink-3); padding: 8px 0; }
+    .pay-btn { margin-top: 16px; }
+
+    /* ---------- ledger ---------- */
+    .ledger { margin-top: 36px; }
+    .ledger .sheet { padding: 0; overflow: hidden; }
+    #grid { width: 100%; }
+    .grid-empty { padding: 14px 26px; color: var(--ink-3); border-top: 1px solid var(--rule); }
+    table.fb { width: 100%; border-collapse: collapse; }
+    table.fb th, table.fb td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--rule); }
+    table.fb tr { cursor: pointer; }
+    table.fb tr.sel { background: var(--blue-soft); }
+    .ag-row.row-selected { background-color: var(--blue-soft) !important; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0;
+      background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 8px; max-width: min(560px, 92vw);
+      pointer-events: none; transition: opacity .18s, transform .18s; z-index: 50; font-size: 14px;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .toast.bad { background: var(--red); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stamp.land, .tl li.now .dot::after, .spin { animation: none; }
+      .toast { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+        <rect width="34" height="34" rx="8" fill="#1e3a8a"/>
+        <path d="M10 17a7 7 0 0 1 12-4.9M24 17a7 7 0 0 1-12 4.9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M22.6 8.6v4.4h-4.4M11.4 25.4V21h4.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>QuoteLoop</span>
+    </div>
+    <div class="whose">
+      <strong id="biz">Pixel Forge Studio</strong>
+      <small>Invoicing through the PayPal sandbox</small>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="cols">
+      <!-- Request -->
+      <section aria-labelledby="h-req">
+        <div class="col-h">
+          <h2 id="h-req">Request</h2>
+          <p>Paste what the customer sent, from any channel.</p>
+        </div>
+        <div class="samples">
+          <span>Try an example:</span>
+          <button class="sample" data-sample="email">Clear email</button>
+          <button class="sample" data-sample="chat">Casual chat</button>
+          <button class="sample" data-sample="over">Big order, big discount ask</button>
+        </div>
+        <textarea id="msg" class="msg" placeholder="Hi, we need a landing page and a logo by the end of the month..." aria-label="Customer message"></textarea>
+        <div class="actions">
+          <button class="btn" id="analyze">Build quote</button>
+          <small>or press Ctrl+Enter</small>
+        </div>
+        <div id="req-error" class="err" role="alert" hidden></div>
+        <div id="found" class="found"></div>
+      </section>
+
+      <!-- Quote -->
+      <section aria-labelledby="h-quote">
+        <div class="col-h">
+          <h2 id="h-quote">Quote</h2>
+          <p>The AI reads the request. Your pricing rules set every number.</p>
+        </div>
+        <div id="quote-body"></div>
+      </section>
+
+      <!-- Payment -->
+      <section aria-labelledby="h-pay">
+        <div class="col-h">
+          <h2 id="h-pay">Payment</h2>
+          <p>Updates by itself when PayPal reports a change.</p>
+        </div>
+        <div id="track-body"></div>
+      </section>
+    </div>
+
+    <section class="ledger" aria-labelledby="h-led">
+      <div class="col-h">
+        <h2 id="h-led">Invoices</h2>
+        <p>Select an invoice to follow its payment.</p>
+      </div>
+      <div class="sheet">
+        <div id="grid" hidden></div>
+        <div id="grid-empty" class="grid-empty">No invoices yet. Approve a quote and it will show up here.</div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    /* ===== helpers ===== */
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const num = v => String(+Number(v).toFixed(2));
+    const fmt = (n, cur) => {
+      try { return new Intl.NumberFormat('en-US', {style: 'currency', currency: cur || 'USD'}).format(n); }
+      catch (e) { return (cur || 'USD') + ' ' + Number(n).toFixed(2); }
+    };
+    const fmtTime = iso => iso ? new Date(iso).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : '';
+    const fmtDay = iso => iso ? new Date(iso).toLocaleDateString([], {day: 'numeric', month: 'short', year: 'numeric'}) : '';
+    const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+    async function api(path, opts) {
+      const res = await fetch(path, Object.assign({headers: {'Content-Type': 'application/json'}}, opts || {}));
+      let body = null;
+      try { body = await res.json(); } catch (e) { /* no body */ }
+      if (!res.ok) {
+        let msg = res.statusText || 'Request failed';
+        if (body && body.detail) msg = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+        throw new Error(msg);
+      }
+      return body;
+    }
+
+    let toastTimer;
+    function toast(msg, bad) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (bad ? ' bad' : '');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { t.className = 'toast' + (bad ? ' bad' : ''); }, bad ? 6000 : 3200);
+    }
+
+    /* ===== state ===== */
+    const state = {
+      extracted: null, items: [], quote: null, headTrace: [], lowConf: [],
+      customer: {name: '', email: ''}, note: '', override: null,
+      sent: null, busy: false,
+      invoices: [], selectedId: null, events: [],
+    };
+
+    const SAMPLES = {
+      email: "Hi team,\n\nWe're launching a new product next month and need 2 landing pages and a logo. Could you also set up monthly maintenance for 3 months? There's no rush, two weeks is fine.\n\nThanks,\nPriya Menon\npriya@brightloop.co",
+      chat: "hey! need a logo and a one page website for my bakery. can u do it for around 900 bucks? need it by sunday",
+      over: "Hello, we want 5 landing pages, 3 logos and 6 months of maintenance. Budget is tight so we need 25% off, and everything by Thursday.\n\nRegards,\nDaniel Ortiz\ndaniel@northwind-labs.com",
+    };
+
+    /* ===== request column ===== */
+    function showReqError(msg) {
+      const el = $('req-error');
+      el.textContent = msg || '';
+      el.hidden = !msg;
+    }
+
+    function renderFound() {
+      const x = state.extracted, el = $('found');
+      if (!x) { el.innerHTML = ''; return; }
+      const dl = x.deadline_days == null ? null
+        : x.deadline_days === 0 ? 'Today'
+        : 'In ' + x.deadline_days + ' day' + (x.deadline_days === 1 ? '' : 's');
+      const disc = x.requested_discount == null ? null : num(x.requested_discount * 100) + '%';
+      const row = (k, v, none) => '<div><dt>' + k + '</dt><dd' + (v ? '' : ' class="none"') + '>' + (v ? esc(v) : none) + '</dd></div>';
+      el.innerHTML =
+        '<h3>Found in the message</h3>' +
+        (x.summary ? '<p class="summary">' + esc(x.summary) + '</p>' : '') +
+        '<dl>' +
+          row('Customer', x.customer_name, 'Not found') +
+          row('Email', x.customer_email, 'Not found') +
+          row('Deadline', dl, 'None mentioned') +
+          row('Discount asked', disc, 'None asked') +
+        '</dl>';
+    }
+
+    async function analyze() {
+      const text = $('msg').value.trim();
+      if (text.length < 3) { showReqError('Paste a customer message first.'); return; }
+      const btn = $('analyze');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin"></span>Reading';
+      showReqError('');
+      try {
+        const data = await api('/api/extract', {method: 'POST', body: JSON.stringify({text: text})});
+        // merge duplicate catalog ids so each product is one row
+        const merged = [];
+        data.extracted.items.forEach(it => {
+          const hit = merged.find(m => m.catalog_id === it.catalog_id);
+          if (hit) hit.quantity += it.quantity; else merged.push(Object.assign({}, it));
+        });
+        state.extracted = data.extracted;
+        state.items = merged;
+        state.quote = data.quote;
+        state.headTrace = data.quote.trace.filter(t => /^(Read the message|Summary:|Deadline:)/.test(t));
+        state.lowConf = data.quote.flags.filter(f => f.code === 'low_confidence');
+        state.customer = {name: data.extracted.customer_name || '', email: data.extracted.customer_email || ''};
+        const days = ((data.quote.payment_term || '').match(/\d+/) || [])[0];
+        state.note = 'Thanks for choosing ' + data.quote.business + '.' + (days ? ' Payment is due within ' + days + ' days.' : '');
+        state.override = null;
+        state.sent = null;
+        $('biz').textContent = data.quote.business;
+        renderFound();
+        renderQuote();
+      } catch (e) {
+        showReqError(e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Build quote';
+      }
+    }
+
+    /* ===== quote column ===== */
+    let recalcTimer;
+    function scheduleRecalc() { clearTimeout(recalcTimer); recalcTimer = setTimeout(recalc, 350); }
+
+    async function recalc() {
+      if (!state.items.length) {
+        state.quote = Object.assign({}, state.quote, {
+          lines: [], subtotal: 0, discount_total: 0, surcharge: 0, tax: 0, total: 0, trace: [],
+          flags: [{code: 'no_items_found', severity: 'error', message: 'This quote has no items left. Paste a new request to start again.'}],
+        });
+        renderQuote();
+        return;
+      }
+      try {
+        const q = await api('/api/quote', {method: 'POST', body: JSON.stringify({
+          items: state.items.map(i => ({catalog_id: i.catalog_id, quantity: i.quantity})),
+          requested_discount: state.extracted ? state.extracted.requested_discount : null,
+          deadline_days: state.extracted ? state.extracted.deadline_days : null,
+          override_discount: state.override === null ? null : state.override / 100,
+        })});
+        q.flags = q.flags.concat(state.lowConf);
+        q.trace = state.headTrace.concat(q.trace);
+        state.quote = q;
+        renderQuote();
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    function hasError(q) { return (q.flags || []).some(f => f.severity === 'error'); }
+    function canApprove() {
+      const q = state.quote;
+      return !!q && !state.sent && !state.busy && q.lines.length > 0 && !hasError(q)
+        && state.customer.name.trim().length > 0 && EMAIL_RE.test(state.customer.email.trim());
+    }
+    function updateApproveState() {
+      const b = $('approve');
+      if (!b) return;
+      b.disabled = !canApprove();
+      b.textContent = state.busy ? 'Sending to PayPal' : 'Approve and send';
+      const h = $('approve-hint');
+      if (h) {
+        const q = state.quote;
+        h.textContent = hasError(q) ? 'Fix the red items before sending.'
+          : (!state.customer.name.trim() || !EMAIL_RE.test(state.customer.email.trim())) ? 'Add the customer’s name and a valid email to send.'
+          : 'Nothing is sent to PayPal until you approve.';
+      }
+    }
+
+    function quoteHTML() {
+      const q = state.quote;
+      if (!q) {
+        return '<div class="sheet empty-sheet"><strong>No quote yet</strong>Paste a request and choose Build quote.</div>';
+      }
+      const lock = state.sent ? ' disabled' : '';
+      const cur = q.currency;
+
+      let rows = '';
+      state.items.forEach((it, i) => {
+        const line = q.lines.find(l => l.kind === 'item' && l.catalog_id === it.catalog_id);
+        if (!line) {
+          rows += '<div class="line missing"><div><div class="line-name">' + esc(it.requested_name || it.catalog_id) + '</div>' +
+            '<div class="line-sub">Not in your catalog</div></div>' +
+            '<span class="miss">Not priced. Remove it or add it by hand later.</span>' +
+            '<button class="x" data-remove="' + i + '" aria-label="Remove ' + esc(it.requested_name || it.catalog_id) + '"' + lock + '>×</button></div>';
+          return;
+        }
+        const sub = [fmt(line.unit_price, cur) + ' each'];
+        if (line.discount_pct > 0) sub.push(num(line.discount_pct) + '% off, ' + line.discount_reason);
+        const low = it.confidence === 'low';
+        rows += '<div class="line"><div><div class="line-name">' + esc(line.name) + '</div>' +
+          '<div class="line-sub' + (low ? ' low' : '') + '">' + esc(sub.join(', ')) + (low ? ' (please check the quantity)' : '') + '</div></div>' +
+          '<input class="qty" id="qty-' + i + '" type="number" min="1" max="999" value="' + it.quantity + '" data-qty="' + i + '" aria-label="Quantity for ' + esc(line.name) + '"' + lock + '>' +
+          '<div class="amt">' + (line.discount_amount > 0 ? '<s>' + fmt(line.gross, cur) + '</s>' : '') + fmt(line.line_total, cur) + '</div>' +
+          '<button class="x" data-remove="' + i + '" aria-label="Remove ' + esc(line.name) + '"' + lock + '>×</button></div>';
+      });
+      q.lines.filter(l => l.kind === 'surcharge').forEach(l => {
+        rows += '<div class="line extra"><div><div class="line-name">' + esc(l.name) + '</div><div class="line-sub">' + esc(l.description) + '</div></div>' +
+          '<span></span><div class="amt">' + fmt(l.line_total, cur) + '</div><span></span></div>';
+      });
+
+      const flags = (q.flags || []).slice().sort((a, b) => ({error: 0, warning: 1, info: 2}[a.severity] - {error: 0, warning: 1, info: 2}[b.severity]));
+      const capMatch = (flags.find(f => f.code === 'discount_above_cap') || {message: ''}).message.match(/up to (\d+(?:\.\d+)?)%/);
+      const cap = capMatch ? parseFloat(capMatch[1]) : 15;
+      const showCounter = flags.some(f => f.code === 'discount_above_cap') && state.override === null && !state.sent;
+
+      const trace = (q.trace || []).map(t => '<li' + (/^\s/.test(t) ? ' class="sub"' : '') + '>' + esc(t.trim()) + '</li>').join('');
+
+      return '<div class="sheet">' +
+        (state.sent ? '<div class="sent-banner"><span>Approved and sent: invoice #' + esc(state.sent.number) + '</span>' +
+          '<button class="btn quiet" id="new-request">Start a new quote</button></div>' : '') +
+        '<div class="sheet-head"><h3>Quote for ' + esc(state.customer.name || 'new customer') + '</h3><small>' + esc(q.business) + '</small></div>' +
+
+        '<div class="sec"><div class="fields">' +
+          '<label class="f">Customer name<input id="cust-name" value="' + esc(state.customer.name) + '" autocomplete="off"' + lock + '></label>' +
+          '<label class="f">Customer email<input id="cust-email" type="email" value="' + esc(state.customer.email) + '" autocomplete="off"' + lock + '></label>' +
+        '</div></div>' +
+
+        '<div class="sec"><div class="lines-h"><span>Item</span><span>Quantity</span><span>Amount</span><span></span></div>' + rows +
+          '<div class="totals">' +
+            '<div><span>Subtotal</span><span>' + fmt(q.subtotal, cur) + '</span></div>' +
+            (q.discount_total > 0 ? '<div class="disc"><span>Discounts</span><span>−' + fmt(q.discount_total, cur) + '</span></div>' : '') +
+            (q.surcharge > 0 ? '<div><span>Rush surcharge</span><span>' + fmt(q.surcharge, cur) + '</span></div>' : '') +
+            (q.tax > 0 ? '<div><span>Tax</span><span>' + fmt(q.tax, cur) + '</span></div>' : '') +
+            '<div class="grand"><span>Total due</span><strong>' + fmt(q.total, cur) + '</strong></div>' +
+          '</div></div>' +
+
+        (flags.length ? '<div class="sec"><div class="notes-h">Check before sending</div>' +
+          flags.map(f => '<div class="note ' + esc(f.severity) + '">' + esc(f.message) + '</div>').join('') + '</div>' : '') +
+
+        (q.lines.length ? '<div class="sec"><div class="decide">' +
+          '<label class="f">Your discount decision<span class="suffix"><input id="override" type="number" min="0" max="100" step="0.5" placeholder="Policy" value="' + (state.override === null ? '' : state.override) + '"' + lock + '><i>%</i></span></label>' +
+          (showCounter ? '<button class="btn quiet" id="counter-cap" data-cap="' + cap + '">Counter at ' + num(cap) + '%</button>' : '') +
+          (state.override !== null && !state.sent ? '<button class="btn quiet" id="clear-override">Follow policy</button>' : '') +
+          '<span class="hint">Leave empty to apply your pricing rules as they are.</span>' +
+        '</div></div>' : '') +
+
+        (trace ? '<div class="sec"><details class="how"><summary>How this quote was worked out</summary><ol>' + trace + '</ol></details></div>' : '') +
+
+        '<div class="sec"><label class="f">Note on the invoice<textarea id="note" rows="2"' + lock + '>' + esc(state.note) + '</textarea></label></div>' +
+
+        (state.sent ? '' : '<div class="sec"><button class="btn wide" id="approve">Approve and send</button><p class="approve-hint" id="approve-hint"></p></div>') +
+      '</div>';
+    }
+
+    function renderQuote() {
+      const el = $('quote-body');
+      const a = document.activeElement;
+      const activeId = a && a.id && el.contains(a) ? a.id : null;
+      const pos = a && typeof a.selectionStart === 'number' ? a.selectionStart : null;
+      el.innerHTML = quoteHTML();
+      updateApproveState();
+      if (activeId && $(activeId)) {
+        const n = $(activeId);
+        n.focus();
+        try { if (pos !== null) n.setSelectionRange(pos, pos); } catch (e) { /* number inputs */ }
+      }
+    }
+
+    $('quote-body').addEventListener('input', e => {
+      const t = e.target;
+      if (t.dataset && t.dataset.qty !== undefined) {
+        const v = parseInt(t.value, 10);
+        if (Number.isNaN(v)) return; // field cleared while typing: wait for a number
+        state.items[+t.dataset.qty].quantity = Math.min(999, Math.max(1, v));
+        scheduleRecalc();
+      } else if (t.id === 'override') {
+        const v = parseFloat(t.value);
+        state.override = Number.isNaN(v) ? null : Math.min(100, Math.max(0, v));
+        scheduleRecalc();
+      } else if (t.id === 'cust-name') {
+        state.customer.name = t.value; updateApproveState();
+      } else if (t.id === 'cust-email') {
+        state.customer.email = t.value; updateApproveState();
+      } else if (t.id === 'note') {
+        state.note = t.value;
+      }
+    });
+
+    $('quote-body').addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.remove !== undefined) { state.items.splice(+b.dataset.remove, 1); recalc(); }
+      else if (b.id === 'counter-cap') { state.override = parseFloat(b.dataset.cap); recalc(); }
+      else if (b.id === 'clear-override') { state.override = null; recalc(); }
+      else if (b.id === 'approve') approve();
+      else if (b.id === 'new-request') resetAll();
+    });
+
+    async function approve() {
+      if (!canApprove()) return;
+      state.busy = true; updateApproveState();
+      try {
+        const r = await api('/api/invoices/approve', {method: 'POST', body: JSON.stringify({
+          customer_name: state.customer.name.trim(),
+          customer_email: state.customer.email.trim(),
+          quote: state.quote,
+          note: state.note,
+        })});
+        state.sent = {number: r.invoice_number, pay_url: r.pay_url, id: r.paypal_invoice_id};
+        state.selectedId = r.paypal_invoice_id;
+        state.events = [];
+        toast('Approved and sent: invoice #' + r.invoice_number);
+        renderQuote();
+        await refreshAll(true);
+      } catch (e) {
+        toast(e.message, true);
+      } finally {
+        state.busy = false; updateApproveState();
+      }
+    }
+
+    function resetAll() {
+      Object.assign(state, {extracted: null, items: [], quote: null, headTrace: [], lowConf: [],
+        customer: {name: '', email: ''}, note: '', override: null, sent: null});
+      $('msg').value = '';
+      showReqError('');
+      renderFound(); renderQuote();
+      $('msg').focus();
+    }
+
+    /* ===== payment column ===== */
+    const stamped = new Set();
+    let lastTrackSig = '';
+
+    function statusLabel(s) {
+      const m = {draft: 'Draft', sent: 'Sent', unpaid: 'Sent', paid: 'Paid', marked_as_paid: 'Paid', cancelled: 'Cancelled',
+        refunded: 'Refunded', marked_as_refunded: 'Refunded', scheduled: 'Scheduled',
+        partially_paid: 'Part paid', payment_pending: 'Payment pending'};
+      return m[s] || s;
+    }
+    function statusClass(s) {
+      if (s === 'paid' || s === 'marked_as_paid') return 'paid';
+      if (s === 'cancelled') return 'cancelled';
+      if (s === 'refunded' || s === 'marked_as_refunded' || s === 'partially_paid') return 'refunded';
+      if (s === 'draft') return 'draft';
+      return '';
+    }
+
+    function renderTrack(force) {
+      const el = $('track-body');
+      const inv = state.invoices.find(i => i.paypal_invoice_id === state.selectedId);
+      const sig = JSON.stringify([state.selectedId, inv, state.events]);
+      if (!force && sig === lastTrackSig) return;
+      lastTrackSig = sig;
+
+      if (!inv) {
+        el.innerHTML = '<div class="pay-empty">No invoice selected. Approve a quote to start following its payment.</div>';
+        return;
+      }
+      const types = new Set(state.events.map(e => e.type));
+      const when = function () {
+        const names = Array.prototype.slice.call(arguments);
+        const ev = state.events.find(e => names.indexOf(e.type) !== -1);
+        return ev ? fmtTime(ev.created_at) : '';
+      };
+      const paid = types.has('paid') || types.has('marked_as_paid');
+      const cancelled = types.has('cancelled');
+      const refunded = types.has('refunded') || types.has('marked_as_refunded');
+      const sent = paid || cancelled || refunded || ['sent', 'unpaid', 'scheduled', 'payment_pending', 'partially_paid'].some(t => types.has(t));
+
+      const steps = [
+        {t: 'Drafted', d: 'Invoice created in PayPal', done: state.events.length > 0, time: when('draft')},
+        {t: 'Sent', d: 'Delivered to ' + (inv.customer_name || 'the customer'), done: sent, time: when('sent', 'unpaid', 'scheduled')},
+        {t: 'Paid', d: paid ? fmt(inv.total, inv.currency) + ' received' : 'Waiting for the customer to pay', done: paid, time: when('paid', 'marked_as_paid')},
+      ];
+      if (cancelled) steps.push({t: 'Cancelled', d: 'This invoice was cancelled', done: true, bad: true, time: when('cancelled')});
+      if (refunded) steps.push({t: 'Refunded', d: 'The payment was refunded', done: true, bad: true, time: when('refunded', 'marked_as_refunded')});
+
+      let currentIdx = steps.findIndex(s => !s.done);
+      if (cancelled || paid) currentIdx = -1;
+
+      const items = steps.map((s, i) =>
+        '<li class="' + (s.bad ? 'bad done' : s.done ? 'done' : i === currentIdx ? 'now' : 'todo') + '">' +
+          '<span class="dot">' + (s.bad ? '!' : s.done ? '✓' : '') + '</span>' +
+          '<div class="t">' + s.t + '</div><div class="d">' + esc(s.d) + (s.time ? ', ' + esc(s.time) : '') + '</div></li>').join('');
+
+      const land = paid && !stamped.has(inv.paypal_invoice_id);
+      if (paid) stamped.add(inv.paypal_invoice_id);
+      const paidAt = inv.paid_at ? fmtDay(inv.paid_at) : '';
+
+      el.innerHTML =
+        '<div class="pay-top">' +
+          (paid ? '<div class="stamp' + (land ? ' land' : '') + '"><b>PAID</b><small>' + esc(paidAt) + '</small></div>' : '') +
+          '<div class="num">Invoice #' + esc(inv.invoice_number) + '</div>' +
+          '<div class="who">' + esc(inv.customer_name) + ' <span class="badge ' + statusClass(inv.status) + '">' + esc(statusLabel(inv.status)) + '</span></div>' +
+          '<div class="sum">' + fmt(inv.total, inv.currency) + '</div>' +
+        '</div>' +
+        '<ol class="tl">' + items + '</ol>' +
+        (!paid && !cancelled && inv.pay_url ? '<a class="btn quiet pay-btn" href="' + esc(inv.pay_url) + '" target="_blank" rel="noopener">Open invoice in PayPal</a>' : '') +
+        (!paid && !cancelled ? '<p class="live">Checking for payment automatically.</p>' : '');
+    }
+
+    /* ===== invoice ledger (AG Grid) ===== */
+    let gridApi = null;
+    const badgeRenderer = p => {
+      const s = document.createElement('span');
+      s.className = 'badge ' + statusClass(p.value);
+      s.textContent = statusLabel(p.value);
+      return s;
+    };
+
+    function initGrid() {
+      if (!window.agGrid) { renderFallback(); return; }
+      const opts = {
+        rowData: [],
+        domLayout: 'autoHeight',
+        getRowId: p => p.data.paypal_invoice_id,
+        defaultColDef: {sortable: true, resizable: true},
+        columnDefs: [
+          {headerName: 'Invoice', field: 'invoice_number', width: 120, valueFormatter: p => '#' + p.value},
+          {headerName: 'Customer', field: 'customer_name', flex: 1, minWidth: 150},
+          {headerName: 'Total', field: 'total', width: 140, type: 'numericColumn', valueFormatter: p => fmt(p.value, p.data && p.data.currency)},
+          {headerName: 'Status', field: 'status', width: 150, cellRenderer: badgeRenderer},
+          {headerName: 'Created', field: 'created_at', flex: 1, minWidth: 160, valueFormatter: p => fmtTime(p.value)},
+          {headerName: 'Paid', field: 'paid_at', flex: 1, minWidth: 160, valueFormatter: p => p.value ? fmtTime(p.value) : '–'},
+        ],
+        rowClassRules: {'row-selected': p => !!p.data && p.data.paypal_invoice_id === state.selectedId},
+        onRowClicked: p => selectInvoice(p.data.paypal_invoice_id),
+      };
+      try {
+        opts.theme = window.agGrid.themeQuartz.withParams({
+          accentColor: '#1e3a8a', borderRadius: 4, wrapperBorderRadius: 0,
+          fontFamily: 'Hanken Grotesk, system-ui, sans-serif', headerFontWeight: 600,
+          headerBackgroundColor: '#f5f7f9', foregroundColor: '#0e1726',
+        });
+      } catch (e) { /* default theme */ }
+      try { gridApi = window.agGrid.createGrid($('grid'), opts); }
+      catch (e) { console.warn('AG Grid failed, using a plain table', e); gridApi = null; renderFallback(); }
+    }
+
+    function renderFallback() {
+      const rows = state.invoices.map(i =>
+        '<tr data-id="' + esc(i.paypal_invoice_id) + '"' + (i.paypal_invoice_id === state.selectedId ? ' class="sel"' : '') + '>' +
+        '<td>#' + esc(i.invoice_number) + '</td><td>' + esc(i.customer_name) + '</td><td>' + fmt(i.total, i.currency) + '</td>' +
+        '<td><span class="badge ' + statusClass(i.status) + '">' + esc(statusLabel(i.status)) + '</span></td><td>' + esc(fmtTime(i.created_at)) + '</td></tr>').join('');
+      $('grid').innerHTML = '<table class="fb"><thead><tr><th>Invoice</th><th>Customer</th><th>Total</th><th>Status</th><th>Created</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+    $('grid').addEventListener('click', e => {
+      const tr = e.target.closest('tr[data-id]');
+      if (tr) selectInvoice(tr.dataset.id);
+    });
+
+    function updateGrid() {
+      const has = state.invoices.length > 0;
+      $('grid-empty').hidden = has;
+      $('grid').hidden = !has;
+      if (gridApi) { gridApi.setGridOption('rowData', state.invoices); gridApi.redrawRows(); }
+      else renderFallback();
+    }
+
+    function selectInvoice(id) {
+      state.selectedId = id;
+      state.events = [];
+      updateGrid();
+      renderTrack(true);
+      refreshAll(true);
+    }
+
+    /* ===== live refresh ===== */
+    let lastInvSig = '';
+    let refreshing = false;
+    async function refreshAll(force) {
+      if (refreshing && !force) return;
+      refreshing = true;
+      try {
+        const invs = await api('/api/invoices');
+        const sig = JSON.stringify(invs);
+        let changed = false;
+        if (sig !== lastInvSig) { lastInvSig = sig; state.invoices = invs; changed = true; }
+        if (!state.selectedId && invs.length) { state.selectedId = invs[0].paypal_invoice_id; changed = true; }
+        if (changed) updateGrid();
+        if (state.selectedId) {
+          try { state.events = await api('/api/invoices/' + encodeURIComponent(state.selectedId) + '/events'); }
+          catch (e) { /* keep old events */ }
+        }
+        renderTrack(false);
+      } catch (e) {
+        /* server restarting or offline: try again next tick */
+      } finally {
+        refreshing = false;
+      }
+    }
+
+    /* ===== wiring ===== */
+    document.querySelectorAll('.sample').forEach(b => b.addEventListener('click', () => {
+      $('msg').value = SAMPLES[b.dataset.sample];
+      showReqError('');
+      $('msg').focus();
+    }));
+    $('analyze').addEventListener('click', analyze);
+    $('msg').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze(); });
+
+    initGrid();
+    renderQuote();
+    renderTrack(true);
+    refreshAll(true);
+    setInterval(() => refreshAll(false), 3000);
   </script>
 </body>
 </html>
