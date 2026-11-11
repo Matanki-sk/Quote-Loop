@@ -1,0 +1,19 @@
+{
+  "business": "Pixel Forge Studio",
+  "currency": "USD",
+  "paymentTerm": "NET_15",
+  "taxRate": 0.0,
+  "maxAutoDiscount": 0.15,
+  "rushSurchargeDays": 5,
+  "rushSurcharge": 0.20,
+  "catalog": [
+    { "id": "landing-page", "name": "Landing page", "price": 800, "unit": "page" },
+    { "id": "logo", "name": "Logo design", "price": 400, "unit": "each" },
+    { "id": "maintenance", "name": "Monthly maintenance", "price": 150, "unit": "month" },
+    { "id": "seo-audit", "name": "SEO audit", "price": 350, "unit": "each" }
+  ],
+  "volumeTiers": [
+    { "minQty": 3, "discount": 0.05 },
+    { "minQty": 5, "discount": 0.10 }
+  ]
+}
