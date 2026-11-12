@@ -106,3 +106,10 @@ def list_events(paypal_invoice_id: str) -> list[dict]:
         rows = c.execute("SELECT type, detail, created_at FROM events "
                          "WHERE paypal_invoice_id=? ORDER BY id", (paypal_invoice_id,)).fetchall()
     return [dict(r) for r in rows]
+
+
+def get_invoice(paypal_invoice_id: str) -> dict | None:
+    for inv in list_invoices():
+        if inv["paypal_invoice_id"] == paypal_invoice_id:
+            return inv
+    return None

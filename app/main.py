@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, db, llm, paypal
+from . import config, db, followup, llm, paypal
 from .pricing import build_quote
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -50,6 +50,14 @@ class QuoteRequest(BaseModel):
 
 class ExtractRequest(BaseModel):
     text: str = Field(min_length=3, max_length=5000)
+
+
+class ReplyRequest(BaseModel):
+    text: str = Field(min_length=3, max_length=3000)
+
+
+class RemindRequest(BaseModel):
+    note: str = Field(min_length=3, max_length=3000)
 
 
 class ApproveRequest(BaseModel):
@@ -185,6 +193,34 @@ def invoices():
 @app.get("/api/invoices/{paypal_id}/events")
 def invoice_events(paypal_id: str):
     return db.list_events(paypal_id)
+
+
+@app.post("/api/invoices/{paypal_id}/followup")
+async def invoice_followup(paypal_id: str, req: ReplyRequest):
+    """Follow-up agent: customer's reply -> intent, policy decision and a drafted answer."""
+    inv = db.get_invoice(paypal_id)
+    if inv is None:
+        raise HTTPException(404, "Invoice not found")
+    try:
+        return await followup.handle_reply(inv, req.text)
+    except llm.ExtractionError as e:
+        raise HTTPException(e.status, str(e))
+
+
+@app.post("/api/invoices/{paypal_id}/remind")
+async def invoice_remind(paypal_id: str, req: RemindRequest):
+    """Send the approved reply to the customer as a PayPal invoice reminder."""
+    inv = db.get_invoice(paypal_id)
+    if inv is None:
+        raise HTTPException(404, "Invoice not found")
+    if inv["status"] in followup.CLOSED_STATUSES:
+        raise HTTPException(400, "This invoice is already closed, so a reminder cannot be sent.")
+    try:
+        await paypal.remind_invoice(paypal_id, f"Re: invoice #{inv['invoice_number']}", req.note)
+    except paypal.PayPalError as e:
+        raise HTTPException(502, str(e))
+    db.add_event(paypal_id, "reminder", "reminder sent through PayPal")
+    return {"ok": True}
 
 
 @app.post("/api/webhooks/paypal")

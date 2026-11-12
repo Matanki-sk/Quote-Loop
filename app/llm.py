@@ -162,3 +162,71 @@ async def extract_request(text: str, rules: dict | None = None) -> dict:
                 {"role": "user", "content": "That was not valid. Return ONLY the JSON object described above."},
             ]
     raise ExtractionError(f"Model returned invalid JSON twice: {last_error}")
+
+
+# ---------- follow-up agent helpers ----------
+REPLY_PROMPT = """You read a customer's reply to an invoice sent by __BUSINESS__.
+Return ONLY a JSON object with exactly these keys:
+{
+  "intent": "accept" or "negotiate" or "question" or "dispute" or "other",
+  "requested_discount_percent": number or null,
+  "summary": string
+}
+intent: "accept" = they agree or say they will pay; "negotiate" = they ask for a lower price, a discount or
+better terms; "question" = they ask something about the invoice or the work; "dispute" = they say the charge is
+wrong, refuse to pay or complain; "other" = anything else.
+requested_discount_percent: only when they name a percent discount (20 means 20 percent). Otherwise null.
+summary: one short sentence saying what the customer wants."""
+
+
+def _normalize_reply(raw: dict) -> dict:
+    if not isinstance(raw, dict):
+        raise ValueError("model did not return a JSON object")
+    intent = raw.get("intent")
+    if intent not in ("accept", "negotiate", "question", "dispute", "other"):
+        intent = "other"
+    discount = None
+    try:
+        pct = float(raw.get("requested_discount_percent"))
+        if pct > 0:
+            discount = round(pct / 100, 4)
+    except (TypeError, ValueError):
+        pass
+    return {"intent": intent, "requested_discount": discount, "summary": str(raw.get("summary") or "").strip()}
+
+
+async def _json_call(messages: list[dict], normalize):
+    last_error: Exception | None = None
+    for _ in range(2):  # one retry if the model returns bad JSON
+        content = await _chat(messages)
+        try:
+            return normalize(json.loads(content))
+        except (ValueError, TypeError, AttributeError) as e:
+            last_error = e
+            messages = messages + [
+                {"role": "assistant", "content": content},
+                {"role": "user", "content": "That was not valid. Return ONLY the JSON object described above."},
+            ]
+    raise ExtractionError(f"Model returned invalid JSON twice: {last_error}")
+
+
+async def analyze_reply(text: str, business: str) -> dict:
+    return await _json_call(
+        [{"role": "system", "content": REPLY_PROMPT.replace("__BUSINESS__", business)},
+         {"role": "user", "content": text}],
+        _normalize_reply,
+    )
+
+
+async def draft_reply(system_prompt: str, customer_text: str) -> str:
+    def normalize(raw):
+        msg = raw.get("message") if isinstance(raw, dict) else None
+        if not isinstance(msg, str) or not msg.strip():
+            raise ValueError("no message in the model output")
+        return msg.strip()
+
+    return await _json_call(
+        [{"role": "system", "content": system_prompt},
+         {"role": "user", "content": "Customer reply:\n" + customer_text}],
+        normalize,
+    )
