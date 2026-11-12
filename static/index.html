@@ -774,7 +774,9 @@
           '<div class="sum">' + fmt(inv.total, inv.currency) + '</div>' +
         '</div>' +
         '<ol class="tl">' + items + '</ol>' +
-        (!paid && !cancelled && inv.pay_url ? '<a class="btn quiet pay-btn" href="' + esc(inv.pay_url) + '" target="_blank" rel="noopener">Open invoice in PayPal</a>' : '') +
+        (inv.pay_url ? '<a class="btn quiet pay-btn" href="' + esc(inv.pay_url) + '" target="_blank" rel="noopener">' +
+          (paid ? 'View paid invoice in PayPal' : 'Open invoice in PayPal') + '</a>' : '') +
+        (paid && inv.pay_url ? '<p class="live">On that page you can download the invoice.</p>' : '') +
         (!paid && !cancelled ? '<p class="live">Checking for payment automatically.</p>' : '');
     }
 
