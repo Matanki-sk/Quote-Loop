@@ -6,8 +6,8 @@ Small businesses get requests scattered across email, chat and forms. Someone ha
 
 > AI reads. Rules decide. A human approves. PayPal closes the loop.
 
-- **Live demo:** https://YOUR-SERVICE.onrender.com  (free hosting: the first load can take about a minute)
-- **Demo video:** YOUR_YOUTUBE_LINK
+- **Live demo:** https://quote-loop.onrender.com (free hosting: the first load can take about a minute)
+- **Demo video:** https://youtu.be/NXAah5hweaY?si=5T1JrojMR-1W9SS4
 
 ## How it works
 
@@ -44,8 +44,8 @@ Groq (model set by `GROQ_MODEL`) in JSON mode reads the message and returns stru
 2. Choose **Big order, big discount ask** and press **Build quote**.
 3. Press **Counter at 15%** to answer the discount request, then **Approve and send**.
 4. Press **Open invoice in PayPal** and pay as the sandbox buyer:
-   - Email: `SANDBOX_BUYER_EMAIL`
-   - Password: `SANDBOX_BUYER_PASSWORD`
+   - Email: `sb-3sksb53849841@personal.example.com`
+   - Password: `-?5&A20y`
 5. Watch the Payment column and the Invoices table (AG Grid) turn to **Paid**.
 
 To see the follow-up agent, stop after step 3 and, in the **Customer replied?** box under the Payment column, press **Use an example** and **Check reply**. Edit the draft and press **Send as PayPal reminder**.
@@ -72,7 +72,7 @@ Locally the app checks PayPal every few seconds, so payments show up without a p
 
 ### Webhooks (needs a public URL)
 
-Deploy to Render using `render.yaml`, then in the PayPal app add a webhook for `https://<your-service>.onrender.com/api/webhooks/paypal` with the `INVOICING.INVOICE.*` events and put its Webhook ID in `PAYPAL_WEBHOOK_ID`. Free Render instances use temporary storage, so the SQLite file resets when the service restarts. That is fine for a demo.
+Deploy to Render using `render.yaml`, then in the PayPal app add a webhook for `https://quote-loop.onrender.com/api/webhooks/paypal` with the `INVOICING.INVOICE.*` events and put its Webhook ID in `PAYPAL_WEBHOOK_ID`. Free Render instances use temporary storage, so the SQLite file resets when the service restarts. That is fine for a demo.
 
 ## Architecture
 
