@@ -87,7 +87,8 @@ Pasted message --> /api/extract --> Groq (structured JSON)
                                       |
  PayPal webhook (signature verified) / polling --> SQLite --> live timeline + AG Grid
 ```
-<img width="1774" height="887" alt="image" src="https://github.com/user-attachments/assets/117181ea-ee70-4c0a-b8bc-b02186deb736" />
+<img width="1774" height="887" alt="image" src="https://github.com/user-attachments/assets/2ba3d110-07a6-4fe6-a779-5d4cde261b35" />
+
 
 Stack: Python, FastAPI, SQLite, vanilla JavaScript, AG Grid Community (invoice table with search, filters, live status flash and totals row).
 
