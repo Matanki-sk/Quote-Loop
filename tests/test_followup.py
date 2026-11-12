@@ -156,6 +156,8 @@ def test_revised_invoice_cancels_the_old_one(monkeypatch):
     assert invs["INV-OLD-0010"]["status"] == "cancelled" and invs[new_id]["total"] == 2295.0
     assert cancelled["pid"] == "INV-OLD-0010" and "#0099" in cancelled["subject"]
     assert events == ["cancelled"]
+    new_events = [e for e in __import__('app.db', fromlist=['x']).list_events(new_id)]
+    assert any(e['type'] == 'revision' and '#0010' in e['detail'] for e in new_events)
 
 
 def test_failed_cancel_is_reported_not_fatal(monkeypatch):

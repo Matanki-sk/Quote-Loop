@@ -188,6 +188,8 @@ async def approve(req: ApproveRequest, background: BackgroundTasks):
     replaced = None
     if req.replaces and req.replaces != paypal_id:
         old = db.get_invoice(req.replaces)
+        if old:
+            db.add_event(paypal_id, "revision", f"replaces invoice #{old['invoice_number']}")
         if old and old["status"] not in followup.CLOSED_STATUSES:
             try:
                 await paypal.cancel_invoice(

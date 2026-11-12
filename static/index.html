@@ -43,7 +43,7 @@
     button, input, textarea { font: inherit; color: inherit; }
     :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
     [hidden] { display: none !important; }
-
+ 
     /* ---------- header ---------- */
     .top {
       display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -55,7 +55,7 @@
     .whose { text-align: right; line-height: 1.3; }
     .whose strong { display: block; font-weight: 600; }
     .whose small { color: var(--ink-3); font-size: 13px; }
-
+ 
     /* ---------- layout ---------- */
     .wrap { max-width: 1320px; margin: 0 auto; padding: 18px 32px 56px; }
     .cols {
@@ -69,7 +69,7 @@
     .col-h { margin-bottom: 14px; }
     .col-h h2 { font: 600 24px/1.2 var(--serif); letter-spacing: -0.005em; }
     .col-h p { color: var(--ink-3); font-size: 14px; margin-top: 2px; }
-
+ 
     /* ---------- request column ---------- */
     .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
     .samples span { color: var(--ink-3); font-size: 13px; margin-right: 2px; }
@@ -120,7 +120,7 @@
     .found dt { color: var(--ink-3); }
     .found dd { margin: 0; font-weight: 500; text-align: right; word-break: break-word; }
     .found dd.none { color: var(--ink-3); font-weight: 400; }
-
+ 
     /* ---------- quote sheet ---------- */
     .sheet {
       background: var(--paper); border: 1px solid var(--rule); border-radius: 6px;
@@ -147,7 +147,7 @@
       background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 5px;
     }
     input:disabled, textarea:disabled { background: var(--paper-2); color: var(--ink-2); }
-
+ 
     .lines-h, .line {
       display: grid; grid-template-columns: minmax(0, 1fr) 70px 176px 26px; gap: 12px; align-items: center;
     }
@@ -178,7 +178,7 @@
       .line > :first-child { grid-column: 1 / -1; }
       .line.missing .miss { grid-column: 1 / 3; }
     }
-
+ 
     .totals { margin-left: auto; width: min(340px, 100%); padding-top: 10px; }
     .totals div { display: flex; justify-content: space-between; padding: 3px 0; color: var(--ink-2); }
     .totals .disc { color: var(--green); }
@@ -188,7 +188,7 @@
     }
     .grand span { font-weight: 600; }
     .grand strong { font: 600 36px/1 var(--serif); letter-spacing: -0.01em; }
-
+ 
     .notes-h { font-weight: 600; margin-bottom: 8px; }
     .note {
       margin: 6px 0; padding: 8px 12px; border-left: 3px solid; border-radius: 4px; font-size: 14px;
@@ -196,7 +196,7 @@
     .note.error { background: var(--red-soft); border-color: var(--red); color: #6e1a15; }
     .note.warning { background: var(--amber-soft); border-color: #c98a00; color: var(--amber); }
     .note.info { background: var(--info-soft); border-color: var(--info); color: #14396b; }
-
+ 
     .decide { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
     .decide label.f { flex: 0 0 150px; }
     .suffix { position: relative; }
@@ -204,20 +204,21 @@
     .suffix i { position: absolute; right: 10px; bottom: 8px; font-style: normal; color: var(--ink-3); }
     .decide .btn { padding: 8px 14px; font-weight: 500; }
     .decide .hint { flex-basis: 100%; color: var(--ink-3); font-size: 13px; }
-
+ 
     details.how summary { cursor: pointer; font-weight: 600; }
     details.how ol { margin: 10px 0 0; padding-left: 22px; color: var(--ink-2); font-size: 14px; }
     details.how li { padding: 1px 0; }
     details.how li.sub { list-style: none; margin-left: 4px; color: var(--ink-3); }
     .approve-hint { margin-top: 8px; color: var(--ink-3); font-size: 13px; text-align: center; }
     .revise-banner { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--accent, #b8860b); border-left-width: 4px; border-radius: 6px; font-size: 14px; background: rgba(184,134,11,.10); }
+    .replaces { margin-top: 4px; font-size: 13px; color: var(--muted, #6b6b6b); }
     .sent-banner {
       padding: 14px 26px; background: var(--green-soft); color: var(--green);
       border-bottom: 1px solid #b9dccd; font-weight: 600; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap;
     }
     .sent-banner .btn { padding: 6px 12px; font-weight: 500; }
     .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-
+ 
     /* ---------- payment column ---------- */
     .pay-top { position: relative; padding: 4px 0 18px; }
     .pay-top .num { font: 600 20px/1.2 var(--serif); }
@@ -271,7 +272,7 @@
     .tl li.todo .t { color: var(--ink-3); font-weight: 500; }
     .live { margin-top: 18px; color: var(--ink-3); font-size: 13px; }
     .pay-empty { color: var(--ink-3); padding: 8px 0; }
-
+ 
     /* ---------- follow-up agent ---------- */
     .follow { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--rule-strong); }
     .follow h3 { font: 600 19px/1.3 var(--serif); }
@@ -291,7 +292,7 @@
     .verdict.warn { border-color: #c98a00; background: var(--amber-soft); color: var(--amber); }
     .verdict.stop { border-color: var(--red); background: var(--red-soft); color: #6e1a15; }
     .pay-btn { margin-top: 16px; }
-
+ 
     /* ---------- ledger ---------- */
     .ledger { margin-top: 36px; }
     .ledger-h { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -306,7 +307,7 @@
     table.fb th, table.fb td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--rule); }
     table.fb tr { cursor: pointer; }
     table.fb tr.sel { background: var(--blue-soft); }
-
+ 
     .toast {
       position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0;
       background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 8px; max-width: min(560px, 92vw);
@@ -314,7 +315,7 @@
     }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
     .toast.bad { background: var(--red); }
-
+ 
     @media (prefers-reduced-motion: reduce) {
       .stamp.land, .tl li.now .dot::after, .spin { animation: none; }
       .toast { transition: none; }
@@ -336,7 +337,7 @@
       <small>Invoicing through the PayPal sandbox</small>
     </div>
   </header>
-
+ 
   <main class="wrap">
     <div class="cols">
       <!-- Request -->
@@ -359,7 +360,7 @@
         <div id="req-error" class="err" role="alert" hidden></div>
         <div id="found" class="found"></div>
       </section>
-
+ 
       <!-- Quote -->
       <section aria-labelledby="h-quote">
         <div class="col-h">
@@ -368,7 +369,7 @@
         </div>
         <div id="quote-body"></div>
       </section>
-
+ 
       <!-- Payment -->
       <section aria-labelledby="h-pay">
         <div class="col-h">
@@ -379,7 +380,7 @@
         <div id="follow-body"></div>
       </section>
     </div>
-
+ 
     <section class="ledger" aria-labelledby="h-led">
       <div class="col-h ledger-h">
         <div>
@@ -394,9 +395,9 @@
       </div>
     </section>
   </main>
-
+ 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
+ 
   <script>
     /* ===== helpers ===== */
     const $ = id => document.getElementById(id);
@@ -409,7 +410,7 @@
     const fmtTime = iso => iso ? new Date(iso).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : '';
     const fmtDay = iso => iso ? new Date(iso).toLocaleDateString([], {day: 'numeric', month: 'short', year: 'numeric'}) : '';
     const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
+ 
     async function api(path, opts) {
       const res = await fetch(path, Object.assign({headers: {'Content-Type': 'application/json'}}, opts || {}));
       let body = null;
@@ -421,7 +422,7 @@
       }
       return body;
     }
-
+ 
     let toastTimer;
     function toast(msg, bad) {
       const t = $('toast');
@@ -430,7 +431,7 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => { t.className = 'toast' + (bad ? ' bad' : ''); }, bad ? 6000 : 3200);
     }
-
+ 
     /* ===== state ===== */
     const state = {
       extracted: null, items: [], quote: null, headTrace: [], lowConf: [],
@@ -438,20 +439,20 @@
       sent: null, busy: false, viewing: false, draftSnapshot: null, revises: null,
       invoices: [], selectedId: null, events: [],
     };
-
+ 
     const SAMPLES = {
       email: "Hi team,\n\nWe're launching a new product next month and need 2 landing pages and a logo. Could you also set up monthly maintenance for 3 months? There's no rush, two weeks is fine.\n\nThanks,\nPriya Menon\npriya@brightloop.co",
       chat: "hey! need a logo and a one page website for my bakery. can u do it for around 900 bucks? need it by sunday",
       over: "Hello, we want 5 landing pages, 3 logos and 6 months of maintenance. Budget is tight so we need 25% off, and everything by Thursday.\n\nRegards,\nDaniel Ortiz\ndaniel@northwind-labs.com",
     };
-
+ 
     /* ===== request column ===== */
     function showReqError(msg) {
       const el = $('req-error');
       el.textContent = msg || '';
       el.hidden = !msg;
     }
-
+ 
     function renderFound() {
       const x = state.extracted, el = $('found');
       if (!x || state.revises) { el.innerHTML = ''; return; }
@@ -470,7 +471,7 @@
           row('Discount asked', disc, 'None asked') +
         '</dl>';
     }
-
+ 
     async function analyze() {
       const text = $('msg').value.trim();
       if (text.length < 3) { showReqError('Paste a customer message first.'); return; }
@@ -506,11 +507,11 @@
         btn.textContent = 'Build quote';
       }
     }
-
+ 
     /* ===== quote column ===== */
     let recalcTimer;
     function scheduleRecalc() { clearTimeout(recalcTimer); recalcTimer = setTimeout(recalc, 350); }
-
+ 
     async function recalc() {
       if (!state.items.length) {
         state.quote = Object.assign({}, state.quote, {
@@ -535,7 +536,7 @@
         toast(e.message, true);
       }
     }
-
+ 
     function hasError(q) { return (q.flags || []).some(f => f.severity === 'error'); }
     function canApprove() {
       const q = state.quote;
@@ -555,7 +556,7 @@
           : 'Nothing is sent to PayPal until you approve.';
       }
     }
-
+ 
     function quoteHTML() {
       const q = state.quote;
       if (!q) {
@@ -563,7 +564,7 @@
       }
       const lock = state.sent ? ' disabled' : '';
       const cur = q.currency;
-
+ 
       let rows = '';
       state.items.forEach((it, i) => {
         const line = q.lines.find(l => l.kind === 'item' && l.catalog_id === it.catalog_id);
@@ -587,14 +588,14 @@
         rows += '<div class="line extra"><div><div class="line-name">' + esc(l.name) + '</div><div class="line-sub">' + esc(l.description) + '</div></div>' +
           '<span></span><div class="amt">' + fmt(l.line_total, cur) + '</div><span></span></div>';
       });
-
+ 
       const flags = (q.flags || []).slice().sort((a, b) => ({error: 0, warning: 1, info: 2}[a.severity] - {error: 0, warning: 1, info: 2}[b.severity]));
       const capMatch = (flags.find(f => f.code === 'discount_above_cap') || {message: ''}).message.match(/up to (\d+(?:\.\d+)?)%/);
       const cap = capMatch ? parseFloat(capMatch[1]) : 15;
       const showCounter = flags.some(f => f.code === 'discount_above_cap') && state.override === null && !state.sent;
-
+ 
       const trace = (q.trace || []).map(t => '<li' + (/^\s/.test(t) ? ' class="sub"' : '') + '>' + esc(t.trim()) + '</li>').join('');
-
+ 
       return '<div class="sheet">' +
         (state.sent ? '<div class="sent-banner"><span>' + (state.viewing ? 'Showing invoice #' : 'Approved and sent: invoice #') + esc(state.sent.number) + '</span>' +
           '<span class="banner-actions">' +
@@ -602,12 +603,12 @@
           '<button class="btn quiet" id="new-request">Start a new quote</button></span></div>' : '') +
         (state.revises && !state.sent ? '<div class="revise-banner">Revised quote. Sending it will cancel invoice #' + esc(state.revises.number) + ' and replace it.</div>' : '') +
         '<div class="sheet-head"><h3>Quote for ' + esc(state.customer.name || 'new customer') + '</h3><small>' + esc(q.business) + '</small></div>' +
-
+ 
         '<div class="sec"><div class="fields">' +
           '<label class="f">Customer name<input id="cust-name" value="' + esc(state.customer.name) + '" autocomplete="off"' + lock + '></label>' +
           '<label class="f">Customer email<input id="cust-email" type="email" value="' + esc(state.customer.email) + '" autocomplete="off"' + lock + '></label>' +
         '</div></div>' +
-
+ 
         '<div class="sec"><div class="lines-h"><span>Item</span><span>Quantity</span><span>Amount</span><span></span></div>' + rows +
           '<div class="totals">' +
             '<div><span>Subtotal</span><span>' + fmt(q.subtotal, cur) + '</span></div>' +
@@ -616,25 +617,25 @@
             (q.tax > 0 ? '<div><span>Tax</span><span>' + fmt(q.tax, cur) + '</span></div>' : '') +
             '<div class="grand"><span>Total due</span><strong>' + fmt(q.total, cur) + '</strong></div>' +
           '</div></div>' +
-
+ 
         (flags.length ? '<div class="sec"><div class="notes-h">' + (state.sent ? 'Flags on this quote' : 'Check before sending') + '</div>' +
           flags.map(f => '<div class="note ' + esc(f.severity) + '">' + esc(f.message) + '</div>').join('') + '</div>' : '') +
-
+ 
         (q.lines.length && !state.sent ? '<div class="sec"><div class="decide">' +
           '<label class="f">Your discount decision<span class="suffix"><input id="override" type="number" min="0" max="100" step="0.5" placeholder="Policy" value="' + (state.override === null ? '' : state.override) + '"' + lock + '><i>%</i></span></label>' +
           (showCounter ? '<button class="btn quiet" id="counter-cap" data-cap="' + cap + '">Counter at ' + num(cap) + '%</button>' : '') +
           (state.override !== null && !state.sent ? '<button class="btn quiet" id="clear-override">Follow policy</button>' : '') +
           '<span class="hint">Leave empty to apply your pricing rules as they are.</span>' +
         '</div></div>' : '') +
-
+ 
         (trace ? '<div class="sec"><details class="how"><summary>How this quote was worked out</summary><ol>' + trace + '</ol></details></div>' : '') +
-
+ 
         (state.viewing ? '' : '<div class="sec"><label class="f">Note on the invoice<textarea id="note" rows="2"' + lock + '>' + esc(state.note) + '</textarea></label></div>') +
-
+ 
         (state.sent ? '' : '<div class="sec"><button class="btn wide" id="approve">' + (state.revises ? 'Send revised invoice' : 'Approve and send') + '</button><p class="approve-hint" id="approve-hint"></p></div>') +
       '</div>';
     }
-
+ 
     function renderQuote() {
       const el = $('quote-body');
       const a = document.activeElement;
@@ -648,7 +649,7 @@
         try { if (pos !== null) n.setSelectionRange(pos, pos); } catch (e) { /* number inputs */ }
       }
     }
-
+ 
     $('quote-body').addEventListener('input', e => {
       const t = e.target;
       if (t.dataset && t.dataset.qty !== undefined) {
@@ -668,7 +669,7 @@
         state.note = t.value;
       }
     });
-
+ 
     $('quote-body').addEventListener('click', e => {
       const b = e.target.closest('button');
       if (!b) return;
@@ -679,7 +680,7 @@
       else if (b.id === 'new-request') resetAll();
       else if (b.id === 'back-draft') restoreDraft();
     });
-
+ 
     async function approve() {
       if (!canApprove()) return;
       state.busy = true; updateApproveState();
@@ -706,7 +707,7 @@
         state.busy = false; updateApproveState();
       }
     }
-
+ 
     function resetAll() {
       Object.assign(state, {extracted: null, items: [], quote: null, headTrace: [], lowConf: [],
         customer: {name: '', email: ''}, note: '', override: null, sent: null, viewing: false, draftSnapshot: null, revises: null});
@@ -715,11 +716,11 @@
       renderFound(); renderQuote();
       $('msg').focus();
     }
-
+ 
     /* ===== payment column ===== */
     const stamped = new Set();
     let lastTrackSig = '';
-
+ 
     function statusLabel(s) {
       const m = {draft: 'Draft', sent: 'Sent', unpaid: 'Sent', paid: 'Paid', marked_as_paid: 'Paid', cancelled: 'Cancelled',
         refunded: 'Refunded', marked_as_refunded: 'Refunded', scheduled: 'Scheduled',
@@ -733,14 +734,14 @@
       if (s === 'draft') return 'draft';
       return '';
     }
-
+ 
     function renderTrack(force) {
       const el = $('track-body');
       const inv = state.invoices.find(i => i.paypal_invoice_id === state.selectedId);
       const sig = JSON.stringify([state.selectedId, inv, state.events]);
       if (!force && sig === lastTrackSig) return;
       lastTrackSig = sig;
-
+ 
       if (!inv) {
         el.innerHTML = '<div class="pay-empty">No invoice selected. Approve a quote to start following its payment.</div>';
         return;
@@ -755,33 +756,39 @@
       const cancelled = types.has('cancelled');
       const refunded = types.has('refunded') || types.has('marked_as_refunded');
       const sent = paid || cancelled || refunded || ['sent', 'unpaid', 'scheduled', 'payment_pending', 'partially_paid'].some(t => types.has(t));
-
+ 
       const steps = [
         {t: 'Drafted', d: 'Invoice created in PayPal', done: state.events.length > 0, time: when('draft')},
         {t: 'Sent', d: 'Delivered to ' + (inv.customer_name || 'the customer'), done: sent, time: when('sent', 'unpaid', 'scheduled')},
         {t: 'Paid', d: paid ? fmt(inv.total, inv.currency) + ' received' : 'Waiting for the customer to pay', done: paid, time: when('paid', 'marked_as_paid')},
       ];
-      if (cancelled) steps.push({t: 'Cancelled', d: 'This invoice was cancelled', done: true, bad: true, time: when('cancelled')});
+      if (cancelled) {
+        const cev = state.events.find(e => e.type === 'cancelled');
+        const replaced = cev && /revised quote/.test(cev.detail || '');
+        steps.push({t: 'Cancelled', d: replaced ? 'Replaced by a revised invoice' : 'This invoice was cancelled', done: true, bad: true, time: when('cancelled')});
+      }
+      const rev = state.events.find(e => e.type === 'revision');
       if (refunded) steps.push({t: 'Refunded', d: 'The payment was refunded', done: true, bad: true, time: when('refunded', 'marked_as_refunded')});
-
+ 
       let currentIdx = steps.findIndex(s => !s.done);
       if (cancelled || paid) currentIdx = -1;
-
+ 
       const items = steps.map((s, i) =>
         '<li class="' + (s.bad ? 'bad done' : s.done ? 'done' : i === currentIdx ? 'now' : 'todo') + '">' +
           '<span class="dot">' + (s.bad ? '!' : s.done ? '✓' : '') + '</span>' +
           '<div class="t">' + s.t + '</div><div class="d">' + esc(s.d) + (s.time ? ', ' + esc(s.time) : '') + '</div></li>').join('');
-
+ 
       const land = paid && !stamped.has(inv.paypal_invoice_id);
       if (paid) stamped.add(inv.paypal_invoice_id);
       const paidAt = inv.paid_at ? fmtDay(inv.paid_at) : '';
-
+ 
       el.innerHTML =
         '<div class="pay-top">' +
           (paid ? '<div class="stamp' + (land ? ' land' : '') + '"><b>PAID</b><small>' + esc(paidAt) + '</small></div>' : '') +
           '<div class="num">Invoice #' + esc(inv.invoice_number) + '</div>' +
           '<div class="who">' + esc(inv.customer_name) + ' <span class="badge ' + statusClass(inv.status) + '">' + esc(statusLabel(inv.status)) + '</span></div>' +
           '<div class="sum">' + fmt(inv.total, inv.currency) + '</div>' +
+          (rev ? '<div class="replaces">Replaces ' + esc((rev.detail || '').replace(/^replaces /, '')) + '</div>' : '') +
         '</div>' +
         '<ol class="tl">' + items + '</ol>' +
         (inv.pay_url ? '<a class="btn quiet pay-btn" href="' + esc(inv.pay_url) + '" target="_blank" rel="noopener">' +
@@ -789,12 +796,12 @@
         (paid && inv.pay_url ? '<p class="live">On that page you can download the invoice.</p>' : '') +
         (!paid && !cancelled ? '<p class="live">Checking for payment automatically.</p>' : '');
     }
-
+ 
     /* ===== follow-up agent ===== */
     const follow = {invoiceId: null, text: '', result: null, draft: '', busy: false, error: '', reminded: false, sig: ''};
     const FOLLOW_EXAMPLE = 'Thanks for the invoice. Our budget is tight this quarter. Could you do 20% off if we pay this week?';
     const CLOSED_STATUSES = ['draft', 'paid', 'marked_as_paid', 'cancelled', 'refunded', 'marked_as_refunded'];
-
+ 
     function renderFollow() {
       const el = $('follow-body');
       const inv = state.invoices.find(i => i.paypal_invoice_id === state.selectedId);
@@ -827,7 +834,7 @@
       }
       el.innerHTML = out + '</div>';
     }
-
+ 
     async function followCheck() {
       const text = (follow.text || '').trim();
       if (text.length < 3) { follow.error = 'Paste the customer’s reply first.'; renderFollow(); return; }
@@ -843,7 +850,7 @@
         renderFollow();
       }
     }
-
+ 
     async function followRemind() {
       const note = (follow.draft || '').trim();
       const id = follow.invoiceId;
@@ -860,7 +867,7 @@
         renderFollow();
       }
     }
-
+ 
     $('follow-body').addEventListener('input', e => {
       if (e.target.id === 'follow-text') follow.text = e.target.value;
       else if (e.target.id === 'follow-draft') follow.draft = e.target.value;
@@ -878,7 +885,7 @@
         else toast('Could not copy. Select the text and copy it.', true);
       }
     });
-
+ 
     /* ===== invoice ledger (AG Grid) ===== */
     let gridApi = null;
     const badgeRenderer = p => {
@@ -898,7 +905,7 @@
         {paypal_invoice_id: '__total_paid', customer_name: 'Total paid (' + paid.length + ')', total: sum(paid), currency: cur},
       ];
     }
-
+ 
     function initGrid() {
       if (!window.agGrid) { renderFallback(); return; }
       const opts = {
@@ -935,7 +942,7 @@
       try { gridApi = window.agGrid.createGrid($('grid'), opts); }
       catch (e) { console.warn('AG Grid failed, using a plain table', e); gridApi = null; renderFallback(); }
     }
-
+ 
     function renderFallback() {
       $('grid-search').hidden = true; // search needs AG Grid
       const rows = state.invoices.map(i =>
@@ -948,7 +955,7 @@
       const tr = e.target.closest('tr[data-id]');
       if (tr) selectInvoice(tr.dataset.id);
     });
-
+ 
     function updateGrid() {
       const has = state.invoices.length > 0;
       $('grid-empty').hidden = has;
@@ -960,7 +967,7 @@
         if (node && !node.isSelected()) node.setSelected(true);
       } else renderFallback();
     }
-
+ 
     /* Show a saved invoice in the Quote column, read-only. An unsent draft is kept so it can be restored. */
     function showInvoiceInQuote(id) {
       const inv = state.invoices.find(i => i.paypal_invoice_id === id);
@@ -989,7 +996,7 @@
       renderFound();
       renderQuote();
     }
-
+ 
     /* Customer reply -> revised quote: load the invoice's items at the new discount, ready to send as a replacement. */
     function prepareRevised(pct) {
       const inv = state.invoices.find(i => i.paypal_invoice_id === state.selectedId);
@@ -1013,7 +1020,7 @@
       renderFound();
       recalc().then(() => { const q = $('quote-body'); if (q && q.scrollIntoView) q.scrollIntoView({behavior: 'smooth', block: 'start'}); });
     }
-
+ 
     function restoreDraft() {
       const d = state.draftSnapshot;
       if (!d) return;
@@ -1021,7 +1028,7 @@
       renderFound();
       renderQuote();
     }
-
+ 
     async function selectInvoice(id) {
       if (id !== state.selectedId) {
         // load the new invoice's events first, then switch once, so nothing flashes empty
@@ -1034,7 +1041,7 @@
       }
       showInvoiceInQuote(id);
     }
-
+ 
     /* ===== live refresh ===== */
     let lastInvSig = '';
     let refreshing = false;
@@ -1063,7 +1070,7 @@
         refreshing = false;
       }
     }
-
+ 
     /* ===== wiring ===== */
     document.querySelectorAll('.sample').forEach(b => b.addEventListener('click', () => {
       $('msg').value = SAMPLES[b.dataset.sample];
@@ -1075,7 +1082,7 @@
     });
     $('analyze').addEventListener('click', analyze);
     $('msg').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze(); });
-
+ 
     initGrid();
     renderQuote();
     renderTrack(true);
