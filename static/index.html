@@ -210,11 +210,13 @@
     details.how li { padding: 1px 0; }
     details.how li.sub { list-style: none; margin-left: 4px; color: var(--ink-3); }
     .approve-hint { margin-top: 8px; color: var(--ink-3); font-size: 13px; text-align: center; }
+    .revise-banner { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--accent, #b8860b); border-left-width: 4px; border-radius: 6px; font-size: 14px; background: rgba(184,134,11,.10); }
     .sent-banner {
       padding: 14px 26px; background: var(--green-soft); color: var(--green);
       border-bottom: 1px solid #b9dccd; font-weight: 600; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap;
     }
     .sent-banner .btn { padding: 6px 12px; font-weight: 500; }
+    .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
     /* ---------- payment column ---------- */
     .pay-top { position: relative; padding: 4px 0 18px; }
@@ -433,7 +435,7 @@
     const state = {
       extracted: null, items: [], quote: null, headTrace: [], lowConf: [],
       customer: {name: '', email: ''}, note: '', override: null,
-      sent: null, busy: false,
+      sent: null, busy: false, viewing: false, draftSnapshot: null, revises: null,
       invoices: [], selectedId: null, events: [],
     };
 
@@ -452,7 +454,7 @@
 
     function renderFound() {
       const x = state.extracted, el = $('found');
-      if (!x) { el.innerHTML = ''; return; }
+      if (!x || state.revises) { el.innerHTML = ''; return; }
       const dl = x.deadline_days == null ? null
         : x.deadline_days === 0 ? 'Today'
         : 'In ' + x.deadline_days + ' day' + (x.deadline_days === 1 ? '' : 's');
@@ -493,7 +495,7 @@
         const days = ((data.quote.payment_term || '').match(/\d+/) || [])[0];
         state.note = 'Thanks for choosing ' + data.quote.business + '.' + (days ? ' Payment is due within ' + days + ' days.' : '');
         state.override = null;
-        state.sent = null;
+        state.sent = null; state.viewing = false; state.draftSnapshot = null; state.revises = null;
         $('biz').textContent = data.quote.business;
         renderFound();
         renderQuote();
@@ -544,7 +546,7 @@
       const b = $('approve');
       if (!b) return;
       b.disabled = !canApprove();
-      b.textContent = state.busy ? 'Sending to PayPal' : 'Approve and send';
+      b.textContent = state.busy ? 'Sending to PayPal' : state.revises ? 'Send revised invoice' : 'Approve and send';
       const h = $('approve-hint');
       if (h) {
         const q = state.quote;
@@ -594,8 +596,11 @@
       const trace = (q.trace || []).map(t => '<li' + (/^\s/.test(t) ? ' class="sub"' : '') + '>' + esc(t.trim()) + '</li>').join('');
 
       return '<div class="sheet">' +
-        (state.sent ? '<div class="sent-banner"><span>Approved and sent: invoice #' + esc(state.sent.number) + '</span>' +
-          '<button class="btn quiet" id="new-request">Start a new quote</button></div>' : '') +
+        (state.sent ? '<div class="sent-banner"><span>' + (state.viewing ? 'Showing invoice #' : 'Approved and sent: invoice #') + esc(state.sent.number) + '</span>' +
+          '<span class="banner-actions">' +
+          (state.draftSnapshot ? '<button class="btn quiet" id="back-draft">Back to your draft</button>' : '') +
+          '<button class="btn quiet" id="new-request">Start a new quote</button></span></div>' : '') +
+        (state.revises && !state.sent ? '<div class="revise-banner">Revised quote. Sending it will cancel invoice #' + esc(state.revises.number) + ' and replace it.</div>' : '') +
         '<div class="sheet-head"><h3>Quote for ' + esc(state.customer.name || 'new customer') + '</h3><small>' + esc(q.business) + '</small></div>' +
 
         '<div class="sec"><div class="fields">' +
@@ -612,10 +617,10 @@
             '<div class="grand"><span>Total due</span><strong>' + fmt(q.total, cur) + '</strong></div>' +
           '</div></div>' +
 
-        (flags.length ? '<div class="sec"><div class="notes-h">Check before sending</div>' +
+        (flags.length ? '<div class="sec"><div class="notes-h">' + (state.sent ? 'Flags on this quote' : 'Check before sending') + '</div>' +
           flags.map(f => '<div class="note ' + esc(f.severity) + '">' + esc(f.message) + '</div>').join('') + '</div>' : '') +
 
-        (q.lines.length ? '<div class="sec"><div class="decide">' +
+        (q.lines.length && !state.sent ? '<div class="sec"><div class="decide">' +
           '<label class="f">Your discount decision<span class="suffix"><input id="override" type="number" min="0" max="100" step="0.5" placeholder="Policy" value="' + (state.override === null ? '' : state.override) + '"' + lock + '><i>%</i></span></label>' +
           (showCounter ? '<button class="btn quiet" id="counter-cap" data-cap="' + cap + '">Counter at ' + num(cap) + '%</button>' : '') +
           (state.override !== null && !state.sent ? '<button class="btn quiet" id="clear-override">Follow policy</button>' : '') +
@@ -624,9 +629,9 @@
 
         (trace ? '<div class="sec"><details class="how"><summary>How this quote was worked out</summary><ol>' + trace + '</ol></details></div>' : '') +
 
-        '<div class="sec"><label class="f">Note on the invoice<textarea id="note" rows="2"' + lock + '>' + esc(state.note) + '</textarea></label></div>' +
+        (state.viewing ? '' : '<div class="sec"><label class="f">Note on the invoice<textarea id="note" rows="2"' + lock + '>' + esc(state.note) + '</textarea></label></div>') +
 
-        (state.sent ? '' : '<div class="sec"><button class="btn wide" id="approve">Approve and send</button><p class="approve-hint" id="approve-hint"></p></div>') +
+        (state.sent ? '' : '<div class="sec"><button class="btn wide" id="approve">' + (state.revises ? 'Send revised invoice' : 'Approve and send') + '</button><p class="approve-hint" id="approve-hint"></p></div>') +
       '</div>';
     }
 
@@ -672,6 +677,7 @@
       else if (b.id === 'clear-override') { state.override = null; recalc(); }
       else if (b.id === 'approve') approve();
       else if (b.id === 'new-request') resetAll();
+      else if (b.id === 'back-draft') restoreDraft();
     });
 
     async function approve() {
@@ -683,11 +689,15 @@
           customer_email: state.customer.email.trim(),
           quote: state.quote,
           note: state.note,
+          replaces: state.revises ? state.revises.id : null,
         })});
         state.sent = {number: r.invoice_number, pay_url: r.pay_url, id: r.paypal_invoice_id};
+        state.viewing = false; state.draftSnapshot = null; state.revises = null;
         state.selectedId = r.paypal_invoice_id;
         state.events = [];
-        toast('Approved and sent: invoice #' + r.invoice_number);
+        if (r.replaced && r.replaced.cancelled) toast('Revised invoice #' + r.invoice_number + ' sent. Invoice #' + r.replaced.number + ' was cancelled.');
+        else if (r.replaced) toast('Invoice #' + r.invoice_number + ' sent, but invoice #' + r.replaced.number + ' could not be cancelled. Cancel it in PayPal.', true);
+        else toast('Approved and sent: invoice #' + r.invoice_number);
         renderQuote();
         await refreshAll(true);
       } catch (e) {
@@ -699,7 +709,7 @@
 
     function resetAll() {
       Object.assign(state, {extracted: null, items: [], quote: null, headTrace: [], lowConf: [],
-        customer: {name: '', email: ''}, note: '', override: null, sent: null});
+        customer: {name: '', email: ''}, note: '', override: null, sent: null, viewing: false, draftSnapshot: null, revises: null});
       $('msg').value = '';
       showReqError('');
       renderFound(); renderQuote();
@@ -812,7 +822,8 @@
           '<label class="f" style="margin-top:12px">Draft reply<textarea id="follow-draft" rows="6">' + esc(follow.draft) + '</textarea></label>' +
           '<div class="row"><button class="btn quiet" id="follow-copy">Copy reply</button>' +
           (r.can_remind ? '<button class="btn" id="follow-remind"' + (follow.reminded || follow.busy ? ' disabled' : '') + '>' +
-            (follow.reminded ? 'Reminder sent' : 'Send as PayPal reminder') + '</button>' : '') + '</div>';
+            (follow.reminded ? 'Reminder sent' : 'Send as PayPal reminder') + '</button>' : '') +
+          (r.can_remind && r.decision.offer_pct != null ? '<button class="btn" id="follow-revise"' + (follow.busy ? ' disabled' : '') + '>Prepare revised quote at ' + num(r.decision.offer_pct) + '%</button>' : '') + '</div>';
       }
       el.innerHTML = out + '</div>';
     }
@@ -860,6 +871,7 @@
       if (b.id === 'follow-example') { follow.text = FOLLOW_EXAMPLE; follow.sig = ''; renderFollow(); }
       else if (b.id === 'follow-go') followCheck();
       else if (b.id === 'follow-remind') followRemind();
+      else if (b.id === 'follow-revise') prepareRevised(follow.result.decision.offer_pct);
       else if (b.id === 'follow-copy') {
         const done = () => toast('Reply copied');
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(follow.draft).then(done, () => toast('Could not copy. Select the text and copy it.', true));
@@ -949,15 +961,78 @@
       } else renderFallback();
     }
 
+    /* Show a saved invoice in the Quote column, read-only. An unsent draft is kept so it can be restored. */
+    function showInvoiceInQuote(id) {
+      const inv = state.invoices.find(i => i.paypal_invoice_id === id);
+      if (!inv) return;
+      if (state.sent && state.sent.id === id) return; // already on screen
+      if (state.quote && !state.sent && !state.draftSnapshot) {
+        state.draftSnapshot = {extracted: state.extracted, items: state.items, quote: state.quote, headTrace: state.headTrace,
+          lowConf: state.lowConf, customer: state.customer, note: state.note, override: state.override, revises: state.revises};
+      }
+      const lines = inv.items || [];
+      const itemLines = lines.filter(l => l.kind === 'item');
+      const sum = (arr, k) => arr.reduce((a, l) => a + Number(l[k] || 0), 0);
+      const subtotal = sum(itemLines, 'gross'), discount = sum(itemLines, 'discount_amount');
+      const surcharge = sum(lines.filter(l => l.kind === 'surcharge'), 'line_total');
+      state.quote = {
+        business: $('biz').textContent, currency: inv.currency, payment_term: '', lines: lines,
+        subtotal: subtotal, discount_total: discount, surcharge: surcharge,
+        tax: Math.max(0, +(inv.total - (subtotal - discount + surcharge)).toFixed(2)),
+        total: inv.total, flags: inv.flags || [], trace: [],
+      };
+      state.items = itemLines.map(l => ({catalog_id: l.catalog_id, requested_name: l.name, quantity: l.quantity, confidence: 'high'}));
+      state.customer = {name: inv.customer_name || '', email: inv.customer_email || ''};
+      state.extracted = null; state.headTrace = []; state.lowConf = []; state.override = null; state.note = ''; state.revises = null;
+      state.sent = {number: inv.invoice_number, pay_url: inv.pay_url, id: inv.paypal_invoice_id};
+      state.viewing = true;
+      renderFound();
+      renderQuote();
+    }
+
+    /* Customer reply -> revised quote: load the invoice's items at the new discount, ready to send as a replacement. */
+    function prepareRevised(pct) {
+      const inv = state.invoices.find(i => i.paypal_invoice_id === state.selectedId);
+      if (!inv) return;
+      if (state.quote && !state.sent && !state.draftSnapshot) {
+        state.draftSnapshot = {extracted: state.extracted, items: state.items, quote: state.quote, headTrace: state.headTrace,
+          lowConf: state.lowConf, customer: state.customer, note: state.note, override: state.override, revises: state.revises};
+      }
+      const lines = inv.items || [];
+      const rush = lines.some(l => l.kind === 'surcharge');
+      state.items = lines.filter(l => l.kind === 'item').map(l => ({catalog_id: l.catalog_id, requested_name: l.name, quantity: l.quantity, confidence: 'high'}));
+      state.customer = {name: inv.customer_name || '', email: inv.customer_email || ''};
+      state.extracted = {deadline_days: rush ? 0 : null, requested_discount: null, items: [], summary: ''};
+      state.headTrace = ['Revised quote after the customer’s reply', 'Replaces invoice #' + inv.invoice_number + ' (' + fmt(inv.total, inv.currency) + ')'];
+      state.lowConf = [];
+      state.override = pct;
+      state.note = 'Revised invoice replacing #' + inv.invoice_number + '. Thanks for choosing ' + $('biz').textContent + '.';
+      state.sent = null; state.viewing = false;
+      state.revises = {id: inv.paypal_invoice_id, number: inv.invoice_number};
+      state.quote = {business: $('biz').textContent, currency: inv.currency, lines: [], subtotal: 0, discount_total: 0, surcharge: 0, tax: 0, total: 0, flags: [], trace: []};
+      renderFound();
+      recalc().then(() => { const q = $('quote-body'); if (q && q.scrollIntoView) q.scrollIntoView({behavior: 'smooth', block: 'start'}); });
+    }
+
+    function restoreDraft() {
+      const d = state.draftSnapshot;
+      if (!d) return;
+      Object.assign(state, {revises: null}, d, {sent: null, viewing: false, draftSnapshot: null});
+      renderFound();
+      renderQuote();
+    }
+
     async function selectInvoice(id) {
-      if (id === state.selectedId) return;
-      // load the new invoice's events first, then switch once, so nothing flashes empty
-      try { state.events = await api('/api/invoices/' + encodeURIComponent(id) + '/events'); }
-      catch (e) { return; }
-      state.selectedId = id;
-      updateGrid();
-      renderTrack(true);
-      renderFollow();
+      if (id !== state.selectedId) {
+        // load the new invoice's events first, then switch once, so nothing flashes empty
+        try { state.events = await api('/api/invoices/' + encodeURIComponent(id) + '/events'); }
+        catch (e) { return; }
+        state.selectedId = id;
+        updateGrid();
+        renderTrack(true);
+        renderFollow();
+      }
+      showInvoiceInQuote(id);
     }
 
     /* ===== live refresh ===== */

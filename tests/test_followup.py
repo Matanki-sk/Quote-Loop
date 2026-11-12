@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import tempfile
+import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -105,3 +106,79 @@ def test_reminder_refused_for_paid_invoice(monkeypatch):
         add_invoice("INV-F-0009", status="paid")
         r = c.post("/api/invoices/INV-F-0009/remind", json={"note": "Friendly reminder"})
     assert r.status_code == 400
+
+
+def _fake_paypal(monkeypatch, cancel):
+    async def number():
+        return "0099"
+
+    async def create(payload):
+        return "INV-NEW-" + uuid.uuid4().hex[:6].upper()
+
+    async def send(invoice_id):
+        return {}
+
+    async def get(invoice_id):
+        return {"status": "SENT", "detail": {"metadata": {"recipient_view_url": "https://example.test/pay"}}}
+
+    async def no_poll(paypal_id):
+        return None
+
+    monkeypatch.setattr(paypal, "generate_invoice_number", number)
+    monkeypatch.setattr(paypal, "create_invoice", create)
+    monkeypatch.setattr(paypal, "send_invoice", send)
+    monkeypatch.setattr(paypal, "get_invoice", get)
+    monkeypatch.setattr(paypal, "cancel_invoice", cancel)
+    monkeypatch.setattr(main, "poll_invoice", no_poll)
+
+
+def _revised_body(replaces):
+    q = build_quote(ITEMS, override_discount=0.15)
+    return {"customer_name": "Asha Rao", "customer_email": "asha@example.com", "quote": q, "replaces": replaces}
+
+
+def test_revised_invoice_cancels_the_old_one(monkeypatch):
+    cancelled = {}
+
+    async def cancel(pid, subject, note):
+        cancelled.update(pid=pid, subject=subject, note=note)
+        return {}
+
+    _fake_paypal(monkeypatch, cancel)
+    with TestClient(main.app) as c:
+        add_invoice("INV-OLD-0010")
+        r = c.post("/api/invoices/approve", json=_revised_body("INV-OLD-0010"))
+        assert r.status_code == 200, r.text
+        assert r.json()["replaced"] == {"number": "0010", "cancelled": True}
+        invs = {i["paypal_invoice_id"]: i for i in c.get("/api/invoices").json()}
+        events = [e["type"] for e in c.get("/api/invoices/INV-OLD-0010/events").json()]
+    new_id = r.json()["paypal_invoice_id"]
+    assert invs["INV-OLD-0010"]["status"] == "cancelled" and invs[new_id]["total"] == 2295.0
+    assert cancelled["pid"] == "INV-OLD-0010" and "#0099" in cancelled["subject"]
+    assert events == ["cancelled"]
+
+
+def test_failed_cancel_is_reported_not_fatal(monkeypatch):
+    async def cancel(pid, subject, note):
+        raise paypal.PayPalError("boom")
+
+    _fake_paypal(monkeypatch, cancel)
+    with TestClient(main.app) as c:
+        add_invoice("INV-OLD-0011")
+        r = c.post("/api/invoices/approve", json=_revised_body("INV-OLD-0011"))
+    assert r.status_code == 200
+    assert r.json()["replaced"]["cancelled"] is False and "boom" in r.json()["replaced"]["error"]
+
+
+def test_paid_invoice_is_never_cancelled(monkeypatch):
+    called = []
+
+    async def cancel(pid, subject, note):
+        called.append(pid)
+        return {}
+
+    _fake_paypal(monkeypatch, cancel)
+    with TestClient(main.app) as c:
+        add_invoice("INV-OLD-0012", status="paid")
+        r = c.post("/api/invoices/approve", json=_revised_body("INV-OLD-0012"))
+    assert r.status_code == 200 and r.json()["replaced"] is None and called == []

@@ -65,6 +65,7 @@ class ApproveRequest(BaseModel):
     customer_email: str
     quote: dict
     note: str = ""
+    replaces: str | None = None  # PayPal id of an invoice this revised one replaces
 
 
 # ---------- status handling ----------
@@ -181,8 +182,24 @@ async def approve(req: ApproveRequest, background: BackgroundTasks):
     db.add_event(paypal_id, "draft", "invoice created in PayPal")
     apply_status(paypal_id, status, "send")
     background.add_task(poll_invoice, paypal_id)
+
+    # A revised quote replaces the invoice it came from. The new invoice is already sent,
+    # so a failure to cancel the old one is reported, not raised.
+    replaced = None
+    if req.replaces and req.replaces != paypal_id:
+        old = db.get_invoice(req.replaces)
+        if old and old["status"] not in followup.CLOSED_STATUSES:
+            try:
+                await paypal.cancel_invoice(
+                    req.replaces, f"Replaced by invoice #{number}",
+                    f"We have issued a revised invoice, #{number}. Please disregard invoice #{old['invoice_number']}.")
+                apply_status(req.replaces, "cancelled", "revised quote")
+                replaced = {"number": old["invoice_number"], "cancelled": True}
+            except paypal.PayPalError as e:
+                replaced = {"number": old["invoice_number"], "cancelled": False, "error": str(e)}
+
     return {"paypal_invoice_id": paypal_id, "invoice_number": number,
-            "status": status, "pay_url": pay_url}
+            "status": status, "pay_url": pay_url, "replaced": replaced}
 
 
 @app.get("/api/invoices")

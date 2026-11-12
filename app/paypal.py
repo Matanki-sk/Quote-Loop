@@ -143,3 +143,11 @@ async def verify_webhook(headers, event: dict) -> bool:
         return False
     data = await _request("POST", "/v1/notifications/verify-webhook-signature", json=body)
     return data.get("verification_status") == "SUCCESS"
+
+
+async def cancel_invoice(invoice_id: str, subject: str, note: str) -> dict:
+    """Cancel a sent invoice (used when a revised invoice replaces it)."""
+    return await _request(
+        "POST", f"/v2/invoicing/invoices/{invoice_id}/cancel",
+        json={"subject": subject, "note": note, "send_to_invoicer": False, "send_to_recipient": True},
+    )

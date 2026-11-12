@@ -66,7 +66,7 @@ def decide(inv: dict, analysis: dict, rules: dict) -> dict:
             total = _offer_total(inv, req, rules)
             return _decision("offer_within_policy", "ok", "Discount within your limit",
                              f"They asked for {_pct(req)} and your limit is {_pct(cap)}, so you can agree. "
-                             f"The total would be {_money(total)}. A revised invoice is not created automatically.",
+                             f"The total would be {_money(total)}. You can prepare a revised quote below.",
                              req, total)
         total = _offer_total(inv, cap, rules)
         return _decision("counter_at_cap", "warn", "Above your discount limit",
